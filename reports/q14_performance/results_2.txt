@@ -1,0 +1,121 @@
+SQL source: C:\Users\User\Documents\GitHub\Trust_In_AI\sql\performance_q14.sql
+Started: 2026-11-25T22:28:48
+
+[01/07] CREATE TEMP TABLE answers_q14_no_index AS SELECT * FROM survey.answers;
+Completed (SELECT 2480940)
+
+[02/07] CREATE TEMP TABLE answers_q14_with_index AS SELECT * FROM survey.answers;
+Completed (SELECT 2480940)
+
+[03/07] CREATE INDEX idx_q14_question_code ON answers_q14_with_index(question_code);
+Completed (CREATE INDEX)
+
+[04/07] ANALYZE answers_q14_no_index;
+Completed (ANALYZE)
+
+[05/07] ANALYZE answers_q14_with_index;
+Completed (ANALYZE)
+
+[06/07] EXPLAIN (ANALYZE, BUFFERS) WITH lang_counts AS ( SELECT r.country, ao.option_text AS language, COUNT(*) AS users FROM answers_q14_no_index a JOIN survey.answer_options ao ON ao.opt
+QUERY PLAN
+Incremental Sort  (cost=59829.22..63559.62 rows=51575 width=49) (actual time=566.578..568.064 rows=898.00 loops=1)
+  Sort Key: lang_counts.country, (rank() OVER w1)
+  Presorted Key: lang_counts.country
+  Full-sort Groups: 26  Sort Method: quicksort  Average Memory: 26kB  Peak Memory: 26kB
+  Buffers: shared hit=705, local read=22528
+  ->  WindowAgg  (cost=59813.73..60845.21 rows=51575 width=49) (actual time=566.508..567.700 rows=898.00 loops=1)
+        Window: w1 AS (PARTITION BY lang_counts.country ORDER BY lang_counts.users ROWS UNBOUNDED PRECEDING)
+        Run Condition: (rank() OVER w1 <= 5)
+        Storage: Memory  Maximum Storage: 17kB
+        Buffers: shared hit=705, local read=22528
+        ->  Sort  (cost=59813.71..59942.65 rows=51575 width=41) (actual time=566.458..566.643 rows=3470.00 loops=1)
+              Sort Key: lang_counts.country, lang_counts.users DESC
+              Sort Method: quicksort  Memory: 260kB
+              Buffers: shared hit=705, local read=22528
+              ->  Subquery Scan on lang_counts  (cost=55261.09..55776.84 rows=51575 width=41) (actual time=557.065..558.311 rows=3470.00 loops=1)
+                    Buffers: shared hit=705, local read=22528
+                    ->  HashAggregate  (cost=55261.09..55776.84 rows=51575 width=41) (actual time=557.063..557.953 rows=3470.00 loops=1)
+                          Group Key: r.country, ao.option_text
+                          Batches: 1  Memory Usage: 1305kB
+                          Buffers: shared hit=705, local read=22528
+                          ->  Hash Join  (cost=1027.00..54874.28 rows=51575 width=33) (actual time=7.035..521.785 rows=65417.00 loops=1)
+                                Hash Cond: (a.respondent_id = r.respondent_id)
+                                Buffers: shared hit=705, local read=22528
+                                ->  Hash Join  (cost=50.44..53762.29 rows=51575 width=22) (actual time=0.517..495.550 rows=65417.00 loops=1)
+                                      Hash Cond: (a.option_id = ao.option_id)
+                                      Buffers: shared hit=17, local read=22528
+                                      ->  Seq Scan on answers_q14_no_index a  (cost=0.00..53539.75 rows=65414 width=12) (actual time=0.082..476.202 rows=65417.00 loops=1)
+                                            Filter: (question_code = 'languages_used'::text)
+                                            Rows Removed by Filter: 2415523
+                                            Buffers: local read=22528
+                                      ->  Hash  (cost=31.86..31.86 rows=1486 width=26) (actual time=0.424..0.425 rows=1486.00 loops=1)
+                                            Buckets: 2048  Batches: 1  Memory Usage: 106kB
+                                            Buffers: shared hit=17
+                                            ->  Seq Scan on answer_options ao  (cost=0.00..31.86 rows=1486 width=26) (actual time=0.014..0.206 rows=1486.00 loops=1)
+                                                  Buffers: shared hit=17
+                                ->  Hash  (cost=816.25..816.25 rows=12825 width=19) (actual time=6.468..6.468 rows=12825.00 loops=1)
+                                      Buckets: 16384  Batches: 1  Memory Usage: 769kB
+                                      Buffers: shared hit=688
+                                      ->  Seq Scan on respondents r  (cost=0.00..816.25 rows=12825 width=19) (actual time=0.011..4.111 rows=12825.00 loops=1)
+                                            Filter: (country IS NOT NULL)
+                                            Buffers: shared hit=688
+Planning:
+  Buffers: shared hit=259
+Planning Time: 2.636 ms
+Execution Time: 568.682 ms
+Result: 45 rows -> reports\q14_performance\result_01.csv
+
+[07/07] EXPLAIN (ANALYZE, BUFFERS) WITH lang_counts AS ( SELECT r.country, ao.option_text AS language, COUNT(*) AS users FROM answers_q14_with_index a JOIN survey.answer_options ao ON ao.o
+QUERY PLAN
+Incremental Sort  (cost=30400.52..34153.40 rows=51858 width=49) (actual time=187.039..188.356 rows=898.00 loops=1)
+  Sort Key: lang_counts.country, (rank() OVER w1)
+  Presorted Key: lang_counts.country
+  Full-sort Groups: 26  Sort Method: quicksort  Average Memory: 26kB  Peak Memory: 26kB
+  Buffers: shared hit=705, local read=10720
+  ->  WindowAgg  (cost=30384.94..31422.08 rows=51858 width=49) (actual time=186.958..188.023 rows=898.00 loops=1)
+        Window: w1 AS (PARTITION BY lang_counts.country ORDER BY lang_counts.users ROWS UNBOUNDED PRECEDING)
+        Run Condition: (rank() OVER w1 <= 5)
+        Storage: Memory  Maximum Storage: 17kB
+        Buffers: shared hit=705, local read=10720
+        ->  Sort  (cost=30384.92..30514.57 rows=51858 width=41) (actual time=186.936..187.099 rows=3470.00 loops=1)
+              Sort Key: lang_counts.country, lang_counts.users DESC
+              Sort Method: quicksort  Memory: 260kB
+              Buffers: shared hit=705, local read=10720
+              ->  Subquery Scan on lang_counts  (cost=25805.27..26323.85 rows=51858 width=41) (actual time=178.483..179.693 rows=3470.00 loops=1)
+                    Buffers: shared hit=705, local read=10720
+                    ->  HashAggregate  (cost=25805.27..26323.85 rows=51858 width=41) (actual time=178.481..179.385 rows=3470.00 loops=1)
+                          Group Key: r.country, ao.option_text
+                          Batches: 1  Memory Usage: 1305kB
+                          Buffers: shared hit=705, local read=10720
+                          ->  Hash Join  (cost=1762.39..25416.33 rows=51858 width=33) (actual time=11.929..151.200 rows=65417.00 loops=1)
+                                Hash Cond: (a.respondent_id = r.respondent_id)
+                                Buffers: shared hit=705, local read=10720
+                                ->  Hash Join  (cost=785.82..24303.60 rows=51858 width=22) (actual time=6.053..129.862 rows=65417.00 loops=1)
+                                      Hash Cond: (a.option_id = ao.option_id)
+                                      Buffers: shared hit=17, local read=10720
+                                      ->  Bitmap Heap Scan on answers_q14_with_index a  (cost=735.39..24081.06 rows=65414 width=12) (actual time=5.489..112.182 rows=65417.00 loops=1)
+                                            Recheck Cond: (question_code = 'languages_used'::text)
+                                            Heap Blocks: exact=10661
+                                            Buffers: local read=10720
+                                            ->  Bitmap Index Scan on idx_q14_question_code  (cost=0.00..719.03 rows=65414 width=0) (actual time=3.625..3.625 rows=65417.00 loops=1)
+                                                  Index Cond: (question_code = 'languages_used'::text)
+                                                  Index Searches: 1
+                                                  Buffers: local read=59
+                                      ->  Hash  (cost=31.86..31.86 rows=1486 width=26) (actual time=0.542..0.542 rows=1486.00 loops=1)
+                                            Buckets: 2048  Batches: 1  Memory Usage: 106kB
+                                            Buffers: shared hit=17
+                                            ->  Seq Scan on answer_options ao  (cost=0.00..31.86 rows=1486 width=26) (actual time=0.047..0.252 rows=1486.00 loops=1)
+                                                  Buffers: shared hit=17
+                                ->  Hash  (cost=816.25..816.25 rows=12825 width=19) (actual time=5.845..5.846 rows=12825.00 loops=1)
+                                      Buckets: 16384  Batches: 1  Memory Usage: 769kB
+                                      Buffers: shared hit=688
+                                      ->  Seq Scan on respondents r  (cost=0.00..816.25 rows=12825 width=19) (actual time=0.023..3.345 rows=12825.00 loops=1)
+                                            Filter: (country IS NOT NULL)
+                                            Buffers: shared hit=688
+Planning:
+  Buffers: shared hit=28, local read=1
+Planning Time: 1.042 ms
+Execution Time: 189.521 ms
+Result: 49 rows -> reports\q14_performance\result_02.csv
+
+SUCCESS: 2 result sets saved in reports\q14_performance
