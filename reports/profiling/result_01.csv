@@ -1,0 +1,14 @@
+﻿schema_name,table_name,row_count
+raw,ai_trust_ml,14230
+raw,answer_codes,135
+raw,data_dictionary,316
+raw,multi_select_answers,2728527
+raw,questions,88
+raw,respondents,30903
+survey,answer_options,1486
+survey,answers,2480940
+survey,question_items,45
+survey,questions,110
+survey,respondents,12825
+survey,technologies,87
+survey,work_info,12825

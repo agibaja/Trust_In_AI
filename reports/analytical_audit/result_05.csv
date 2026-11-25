@@ -1,0 +1,2 @@
+﻿test,languages,invalid_groups,min_pct,max_pct,status
+05 language AI percentage bounds,49,0,24.49,69.00,PASS

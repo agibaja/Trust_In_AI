@@ -1,0 +1,481 @@
+SQL source: C:\Users\ainho\Downloads\projectB\sql\data_profiling.sql
+Started: 2026-11-25T11:16:16
+
+[01/17] SELECT 'raw' AS schema_name, 'respondents' AS table_name, COUNT(*) AS row_count FROM raw.respondents UNION ALL SELECT 'raw','ai_trust_ml', COUNT(*) FROM raw.ai_trust_ml UNION ALL S
+schema_name | table_name | row_count
+raw | ai_trust_ml | 14230
+raw | answer_codes | 135
+raw | data_dictionary | 316
+raw | multi_select_answers | 2728527
+raw | questions | 88
+raw | respondents | 30903
+survey | answer_options | 1486
+survey | answers | 2480940
+survey | question_items | 45
+survey | questions | 110
+survey | respondents | 12825
+survey | technologies | 87
+survey | work_info | 12825
+Result: 13 rows -> reports\profiling\result_01.csv
+
+[02/17] SELECT t.table_name, COALESCE(string_agg(k.column_name, ', ' ORDER BY k.ordinal_position), '(MISSING)') AS primary_key_columns, CASE WHEN COUNT(k.column_name)>0 THEN 'PASS' ELSE 'F
+table_name | primary_key_columns | pk_status
+answer_options | option_id | PASS
+answers | answer_id | PASS
+question_items | item_id | PASS
+questions | question_code | PASS
+respondents | respondent_id | PASS
+technologies | technology_id | PASS
+work_info | respondent_id | PASS
+Result: 7 rows -> reports\profiling\result_02.csv
+
+[03/17] SELECT conrelid::regclass AS table_name, conname AS constraint_name, CASE contype WHEN 'p' THEN 'PRIMARY KEY' WHEN 'f' THEN 'FOREIGN KEY' WHEN 'u' THEN 'UNIQUE' WHEN 'c' THEN 'CHEC
+table_name | constraint_name | kind | definition
+survey.respondents | respondents_years_coding_check | CHECK | CHECK ((years_coding >= 0))
+survey.respondents | respondents_respondent_id_not_null | n | NOT NULL respondent_id
+survey.respondents | respondents_pkey | PRIMARY KEY | PRIMARY KEY (respondent_id)
+survey.work_info | work_info_years_professional_check | CHECK | CHECK ((years_professional >= 0))
+survey.work_info | work_info_respondent_id_fkey | FOREIGN KEY | FOREIGN KEY (respondent_id) REFERENCES survey.respondents(respondent_id)
+survey.work_info | work_info_respondent_id_not_null | n | NOT NULL respondent_id
+survey.work_info | work_info_pkey | PRIMARY KEY | PRIMARY KEY (respondent_id)
+survey.questions | questions_question_type_check | CHECK | CHECK ((question_type = ANY (ARRAY['single'::text, 'multi'::text, 'matrix'::text, 'numeric'::text, 'text'::text])))
+survey.questions | questions_question_code_not_null | n | NOT NULL question_code
+survey.questions | questions_question_text_not_null | n | NOT NULL question_text
+survey.questions | questions_question_type_not_null | n | NOT NULL question_type
+survey.questions | questions_pkey | PRIMARY KEY | PRIMARY KEY (question_code)
+survey.question_items | question_items_question_code_fkey | FOREIGN KEY | FOREIGN KEY (question_code) REFERENCES survey.questions(question_code)
+survey.question_items | question_items_item_code_not_null | n | NOT NULL item_code
+survey.question_items | question_items_item_id_not_null | n | NOT NULL item_id
+survey.question_items | question_items_question_code_not_null | n | NOT NULL question_code
+survey.question_items | question_items_pkey | PRIMARY KEY | PRIMARY KEY (item_id)
+survey.question_items | question_items_question_code_item_code_key | UNIQUE | UNIQUE (question_code, item_code)
+survey.question_items | question_items_question_code_item_id_key | UNIQUE | UNIQUE (question_code, item_id)
+survey.technologies | technologies_technology_category_not_null | n | NOT NULL technology_category
+survey.technologies | technologies_technology_id_not_null | n | NOT NULL technology_id
+survey.technologies | technologies_technology_name_not_null | n | NOT NULL technology_name
+survey.technologies | technologies_pkey | PRIMARY KEY | PRIMARY KEY (technology_id)
+survey.technologies | technologies_technology_name_technology_category_key | UNIQUE | UNIQUE (technology_name, technology_category)
+survey.answer_options | answer_options_question_code_fkey | FOREIGN KEY | FOREIGN KEY (question_code) REFERENCES survey.questions(question_code)
+survey.answer_options | answer_options_technology_id_fkey | FOREIGN KEY | FOREIGN KEY (technology_id) REFERENCES survey.technologies(technology_id)
+survey.answer_options | answer_options_option_id_not_null | n | NOT NULL option_id
+survey.answer_options | answer_options_option_text_not_null | n | NOT NULL option_text
+survey.answer_options | answer_options_question_code_not_null | n | NOT NULL question_code
+survey.answer_options | answer_options_pkey | PRIMARY KEY | PRIMARY KEY (option_id)
+survey.answer_options | answer_options_question_code_option_id_key | UNIQUE | UNIQUE (question_code, option_id)
+survey.answer_options | answer_options_question_code_option_text_key | UNIQUE | UNIQUE (question_code, option_text)
+survey.answers | exactly_one_answer_value | CHECK | CHECK ((((
+CASE
+    WHEN (option_id IS NOT NULL) THEN 1
+    ELSE 0
+END +
+CASE
+    WHEN (numeric_value IS NOT NULL) THEN 1
+    ELSE 0
+END) +
+CASE
+    WHEN (text_value IS NOT NULL) THEN 1
+    ELSE 0
+END) = 1))
+survey.answers | answers_question_code_fkey | FOREIGN KEY | FOREIGN KEY (question_code) REFERENCES survey.questions(question_code)
+survey.answers | answers_respondent_id_fkey | FOREIGN KEY | FOREIGN KEY (respondent_id) REFERENCES survey.respondents(respondent_id)
+survey.answers | valid_question_item | FOREIGN KEY | FOREIGN KEY (question_code, item_id) REFERENCES survey.question_items(question_code, item_id)
+survey.answers | valid_question_option | FOREIGN KEY | FOREIGN KEY (question_code, option_id) REFERENCES survey.answer_options(question_code, option_id)
+survey.answers | answers_answer_id_not_null | n | NOT NULL answer_id
+survey.answers | answers_question_code_not_null | n | NOT NULL question_code
+survey.answers | answers_respondent_id_not_null | n | NOT NULL respondent_id
+survey.answers | answers_pkey | PRIMARY KEY | PRIMARY KEY (answer_id)
+Result: 41 rows -> reports\profiling\result_03.csv
+
+[04/17] SELECT tablename AS table_name, indexname, indexdef FROM pg_indexes WHERE schemaname='survey' ORDER BY tablename, indexname;
+table_name | indexname | indexdef
+answer_options | answer_options_pkey | CREATE UNIQUE INDEX answer_options_pkey ON survey.answer_options USING btree (option_id)
+answer_options | answer_options_question_code_option_id_key | CREATE UNIQUE INDEX answer_options_question_code_option_id_key ON survey.answer_options USING btree (question_code, option_id)
+answer_options | answer_options_question_code_option_text_key | CREATE UNIQUE INDEX answer_options_question_code_option_text_key ON survey.answer_options USING btree (question_code, option_text)
+answers | answers_pkey | CREATE UNIQUE INDEX answers_pkey ON survey.answers USING btree (answer_id)
+answers | ix_answer_question | CREATE INDEX ix_answer_question ON survey.answers USING btree (question_code)
+answers | ix_answer_respondent | CREATE INDEX ix_answer_respondent ON survey.answers USING btree (respondent_id)
+answers | uq_answer_matrix_scalar | CREATE UNIQUE INDEX uq_answer_matrix_scalar ON survey.answers USING btree (respondent_id, question_code, item_id) WHERE ((item_id IS NOT NULL) AND (option_id IS NULL))
+answers | uq_answer_option_selected | CREATE UNIQUE INDEX uq_answer_option_selected ON survey.answers USING btree (respondent_id, question_code, option_id) WHERE ((option_id IS NOT NULL) AND (item_id IS NULL))
+answers | uq_answer_scalar | CREATE UNIQUE INDEX uq_answer_scalar ON survey.answers USING btree (respondent_id, question_code) WHERE ((option_id IS NULL) AND (item_id IS NULL))
+question_items | question_items_pkey | CREATE UNIQUE INDEX question_items_pkey ON survey.question_items USING btree (item_id)
+question_items | question_items_question_code_item_code_key | CREATE UNIQUE INDEX question_items_question_code_item_code_key ON survey.question_items USING btree (question_code, item_code)
+question_items | question_items_question_code_item_id_key | CREATE UNIQUE INDEX question_items_question_code_item_id_key ON survey.question_items USING btree (question_code, item_id)
+questions | questions_pkey | CREATE UNIQUE INDEX questions_pkey ON survey.questions USING btree (question_code)
+respondents | respondents_pkey | CREATE UNIQUE INDEX respondents_pkey ON survey.respondents USING btree (respondent_id)
+technologies | technologies_pkey | CREATE UNIQUE INDEX technologies_pkey ON survey.technologies USING btree (technology_id)
+technologies | technologies_technology_name_technology_category_key | CREATE UNIQUE INDEX technologies_technology_name_technology_category_key ON survey.technologies USING btree (technology_name, technology_category)
+work_info | work_info_pkey | CREATE UNIQUE INDEX work_info_pkey ON survey.work_info USING btree (respondent_id)
+Result: 17 rows -> reports\profiling\result_04.csv
+
+[05/17] CREATE TEMP TABLE profile_keys ( source_table TEXT, candidate_key TEXT, rows_total BIGINT, missing_key BIGINT, distinct_nonmissing BIGINT, duplicate_excess BIGINT ) ON COMMIT PRESE
+Completed (CREATE TABLE)
+
+[06/17] INSERT INTO profile_keys SELECT 'raw.respondents','respondent_id', COUNT(*), COUNT(*) FILTER (WHERE NULLIF(BTRIM(respondent_id),'') IS NULL), COUNT(DISTINCT respondent_id) FILTER (
+Completed (INSERT 0 1)
+
+[07/17] INSERT INTO profile_keys SELECT 'raw.ai_trust_ml','respondent_id', COUNT(*), COUNT(*) FILTER (WHERE NULLIF(BTRIM(respondent_id),'') IS NULL), COUNT(DISTINCT respondent_id) FILTER (
+Completed (INSERT 0 1)
+
+[08/17] INSERT INTO profile_keys SELECT 'raw.questions','question',COUNT(*), COUNT(*) FILTER (WHERE NULLIF(BTRIM(question),'') IS NULL), COUNT(DISTINCT question) FILTER (WHERE NULLIF(BTRIM
+Completed (INSERT 0 1)
+
+[09/17] INSERT INTO profile_keys SELECT 'raw.answer_codes','(code_column, code)',COUNT(*), COUNT(*) FILTER (WHERE NULLIF(BTRIM(code_column),'') IS NULL OR NULLIF(BTRIM(code),'') IS NULL), 
+Completed (INSERT 0 1)
+
+[10/17] INSERT INTO profile_keys SELECT 'raw.multi_select_answers','(respondent_id, question, answer)',COUNT(*), COUNT(*) FILTER (WHERE NULLIF(BTRIM(respondent_id),'') IS NULL OR NULLIF(BT
+Completed (INSERT 0 1)
+
+[11/17] INSERT INTO profile_keys SELECT 'raw.data_dictionary','(file, column)',COUNT(*), COUNT(*) FILTER (WHERE NULLIF(BTRIM(file),'') IS NULL OR NULLIF(BTRIM("column"),'') IS NULL), COUNT
+Completed (INSERT 0 1)
+
+[12/17] SELECT *, CASE WHEN missing_key=0 AND duplicate_excess=0 THEN 'VALID CANDIDATE KEY' ELSE 'REVIEW' END AS assessment FROM profile_keys ORDER BY source_table;
+source_table | candidate_key | rows_total | missing_key | distinct_nonmissing | duplicate_excess | assessment
+raw.ai_trust_ml | respondent_id | 14230 | 0 | 14230 | 0 | VALID CANDIDATE KEY
+raw.answer_codes | (code_column, code) | 135 | 0 | 135 | 0 | VALID CANDIDATE KEY
+raw.data_dictionary | (file, column) | 316 | 0 | 316 | 0 | VALID CANDIDATE KEY
+raw.multi_select_answers | (respondent_id, question, answer) | 2728527 | 0 | 2728527 | 0 | VALID CANDIDATE KEY
+raw.questions | question | 88 | 0 | 88 | 0 | VALID CANDIDATE KEY
+raw.respondents | respondent_id | 30903 | 0 | 30903 | 0 | VALID CANDIDATE KEY
+Result: 6 rows -> reports\profiling\result_05.csv
+
+[13/17] CREATE TEMP TABLE profile_nulls ( source_table TEXT, column_name TEXT, null_or_blank_count BIGINT, total_rows BIGINT, null_or_blank_pct NUMERIC(7,3) ) ON COMMIT PRESERVE ROWS;
+Completed (CREATE TABLE)
+
+[14/17] DO $$ DECLARE tbl TEXT; expr TEXT; n BIGINT[]; total BIGINT; cols TEXT[]; i INT; BEGIN FOR tbl IN SELECT unnest(ARRAY['respondents','ai_trust_ml','questions','answer_codes','multi_
+Completed (DO)
+
+[15/17] SELECT source_table, column_name, null_or_blank_count, total_rows, null_or_blank_pct FROM profile_nulls ORDER BY source_table, column_name;
+source_table | column_name | null_or_blank_count | total_rows | null_or_blank_pct
+raw.ai_trust_ml | age_group_code | 77 | 14230 | 0.541
+raw.ai_trust_ml | agent_aider | 3248 | 14230 | 22.825
+raw.ai_trust_ml | agent_amazon_q_developer | 3248 | 14230 | 22.825
+raw.ai_trust_ml | agent_approxima | 3248 | 14230 | 22.825
+raw.ai_trust_ml | agent_augment_code | 3248 | 14230 | 22.825
+raw.ai_trust_ml | agent_blackbox_ai | 3248 | 14230 | 22.825
+raw.ai_trust_ml | agent_claude_code | 3248 | 14230 | 22.825
+raw.ai_trust_ml | agent_cline | 3248 | 14230 | 22.825
+raw.ai_trust_ml | agent_codium | 3248 | 14230 | 22.825
+raw.ai_trust_ml | agent_continue | 3248 | 14230 | 22.825
+raw.ai_trust_ml | agent_cursor | 3248 | 14230 | 22.825
+raw.ai_trust_ml | agent_devin | 3248 | 14230 | 22.825
+raw.ai_trust_ml | agent_eca | 3248 | 14230 | 22.825
+raw.ai_trust_ml | agent_emdash | 3248 | 14230 | 22.825
+raw.ai_trust_ml | agent_gemini_code_assist | 3248 | 14230 | 22.825
+raw.ai_trust_ml | agent_github_copilot | 3248 | 14230 | 22.825
+raw.ai_trust_ml | agent_google_antigravity | 3248 | 14230 | 22.825
+raw.ai_trust_ml | agent_google_jules | 3248 | 14230 | 22.825
+raw.ai_trust_ml | agent_jetbrains_ai | 3248 | 14230 | 22.825
+raw.ai_trust_ml | agent_kavia_ai | 3248 | 14230 | 22.825
+raw.ai_trust_ml | agent_kilo_code | 3248 | 14230 | 22.825
+raw.ai_trust_ml | agent_mistral_vibe | 3248 | 14230 | 22.825
+raw.ai_trust_ml | agent_open_code | 3248 | 14230 | 22.825
+raw.ai_trust_ml | agent_openai_codex | 3248 | 14230 | 22.825
+raw.ai_trust_ml | agent_pi | 3248 | 14230 | 22.825
+raw.ai_trust_ml | agent_replit_agent | 3248 | 14230 | 22.825
+raw.ai_trust_ml | agent_sourcegraph_cody | 3248 | 14230 | 22.825
+raw.ai_trust_ml | agent_supermaven | 3248 | 14230 | 22.825
+raw.ai_trust_ml | agent_sweep | 3248 | 14230 | 22.825
+raw.ai_trust_ml | agent_syntropy | 3248 | 14230 | 22.825
+raw.ai_trust_ml | agent_tabnine | 3248 | 14230 | 22.825
+raw.ai_trust_ml | agent_trae | 3248 | 14230 | 22.825
+raw.ai_trust_ml | agent_warp | 3248 | 14230 | 22.825
+raw.ai_trust_ml | agent_windsurf | 3248 | 14230 | 22.825
+raw.ai_trust_ml | ai_avoid_reason | 2752 | 14230 | 19.339
+raw.ai_trust_ml | ai_complex_tasks_code | 957 | 14230 | 6.725
+raw.ai_trust_ml | ai_context_control | 3728 | 14230 | 26.198
+raw.ai_trust_ml | ai_freq_agents_code | 0 | 14230 | 0.000
+raw.ai_trust_ml | ai_freq_chat_tools_code | 0 | 14230 | 0.000
+raw.ai_trust_ml | ai_freq_coding_assistants_code | 0 | 14230 | 0.000
+raw.ai_trust_ml | ai_freq_internal_tools_code | 0 | 14230 | 0.000
+raw.ai_trust_ml | ai_memory_owner | 1500 | 14230 | 10.541
+raw.ai_trust_ml | ai_satisfaction_architecture_code | 2541 | 14230 | 17.857
+raw.ai_trust_ml | ai_satisfaction_communication_code | 2602 | 14230 | 18.285
+raw.ai_trust_ml | ai_satisfaction_debugging_code | 2428 | 14230 | 17.063
+raw.ai_trust_ml | ai_satisfaction_design_code | 2521 | 14230 | 17.716
+raw.ai_trust_ml | ai_satisfaction_documentation_code | 2499 | 14230 | 17.561
+raw.ai_trust_ml | ai_satisfaction_implementation_code | 2369 | 14230 | 16.648
+raw.ai_trust_ml | ai_satisfaction_review_code | 2518 | 14230 | 17.695
+raw.ai_trust_ml | ai_sentiment_code | 176 | 14230 | 1.237
+raw.ai_trust_ml | ai_share_of_workday_code | 3470 | 14230 | 24.385
+raw.ai_trust_ml | ai_source_attribution_importance_code | 3471 | 14230 | 24.392
+raw.ai_trust_ml | ai_tool_switch_reason | 1183 | 14230 | 8.313
+raw.ai_trust_ml | ai_trust | 0 | 14230 | 0.000
+raw.ai_trust_ml | ai_trust_broad | 0 | 14230 | 0.000
+raw.ai_trust_ml | ai_trust_class | 0 | 14230 | 0.000
+raw.ai_trust_ml | ai_trust_level | 0 | 14230 | 0.000
+raw.ai_trust_ml | ai_useful_architecture_code | 3410 | 14230 | 23.963
+raw.ai_trust_ml | ai_useful_communication_code | 4201 | 14230 | 29.522
+raw.ai_trust_ml | ai_useful_debugging_code | 2360 | 14230 | 16.585
+raw.ai_trust_ml | ai_useful_design_code | 3894 | 14230 | 27.365
+raw.ai_trust_ml | ai_useful_documentation_code | 3053 | 14230 | 21.455
+raw.ai_trust_ml | ai_useful_implementation_code | 2238 | 14230 | 15.727
+raw.ai_trust_ml | ai_useful_review_code | 3071 | 14230 | 21.581
+raw.ai_trust_ml | check_ask_a_coworker | 1158 | 14230 | 8.138
+raw.ai_trust_ml | check_compare_against_codebase_context | 1158 | 14230 | 8.138
+raw.ai_trust_ml | check_inspect_tests_security_implications | 1158 | 14230 | 8.138
+raw.ai_trust_ml | check_no_ai_use | 1158 | 14230 | 8.138
+raw.ai_trust_ml | check_read_official_docs | 1158 | 14230 | 8.138
+raw.ai_trust_ml | check_run_it_locally | 1158 | 14230 | 8.138
+raw.ai_trust_ml | check_search_stack_overflow | 1158 | 14230 | 8.138
+raw.ai_trust_ml | check_use_as_is | 1158 | 14230 | 8.138
+raw.ai_trust_ml | coder_type | 6 | 14230 | 0.042
+raw.ai_trust_ml | comp_usd_yearly | 4337 | 14230 | 30.478
+raw.ai_trust_ml | country | 0 | 14230 | 0.000
+raw.ai_trust_ml | cv_fold | 0 | 14230 | 0.000
+raw.ai_trust_ml | education | 17 | 14230 | 0.119
+raw.ai_trust_ml | employment | 0 | 14230 | 0.000
+raw.ai_trust_ml | ic_or_manager | 1865 | 14230 | 13.106
+raw.ai_trust_ml | industry | 1868 | 14230 | 13.127
+raw.ai_trust_ml | job_satisfaction | 1867 | 14230 | 13.120
+raw.ai_trust_ml | late_context_frequency_code | 4171 | 14230 | 29.311
+raw.ai_trust_ml | learned_ai_last_year | 6 | 14230 | 0.042
+raw.ai_trust_ml | llm_01_ai | 3834 | 14230 | 26.943
+raw.ai_trust_ml | llm_alibaba_qwen | 3834 | 14230 | 26.943
+raw.ai_trust_ml | llm_anthropic | 3834 | 14230 | 26.943
+raw.ai_trust_ml | llm_black_forest_labs | 3834 | 14230 | 26.943
+raw.ai_trust_ml | llm_cascade | 3834 | 14230 | 26.943
+raw.ai_trust_ml | llm_cohere | 3834 | 14230 | 26.943
+raw.ai_trust_ml | llm_databricks | 3834 | 14230 | 26.943
+raw.ai_trust_ml | llm_deepseek | 3834 | 14230 | 26.943
+raw.ai_trust_ml | llm_google_ai | 3834 | 14230 | 26.943
+raw.ai_trust_ml | llm_guide_labs | 3834 | 14230 | 26.943
+raw.ai_trust_ml | llm_luel | 3834 | 14230 | 26.943
+raw.ai_trust_ml | llm_meta_ai | 3834 | 14230 | 26.943
+raw.ai_trust_ml | llm_microsoft | 3834 | 14230 | 26.943
+raw.ai_trust_ml | llm_mistral_ai | 3834 | 14230 | 26.943
+raw.ai_trust_ml | llm_moonshot_ai | 3834 | 14230 | 26.943
+raw.ai_trust_ml | llm_openai | 3834 | 14230 | 26.943
+raw.ai_trust_ml | llm_other | 3834 | 14230 | 26.943
+raw.ai_trust_ml | llm_reka | 3834 | 14230 | 26.943
+raw.ai_trust_ml | llm_snowflake | 3834 | 14230 | 26.943
+raw.ai_trust_ml | llm_stability_ai | 3834 | 14230 | 26.943
+raw.ai_trust_ml | llm_voyage_ai | 3834 | 14230 | 26.943
+raw.ai_trust_ml | llm_xai | 3834 | 14230 | 26.943
+raw.ai_trust_ml | llm_zhipu_ai | 3834 | 14230 | 26.943
+raw.ai_trust_ml | mistake_hallucinated_package_config | 2888 | 14230 | 20.295
+raw.ai_trust_ml | mistake_hard_to_review_generated_code | 2888 | 14230 | 20.295
+raw.ai_trust_ml | mistake_incorrect_or_stale_internal_knowledge | 2888 | 14230 | 20.295
+raw.ai_trust_ml | mistake_licensing_source_uncertainty | 2888 | 14230 | 20.295
+raw.ai_trust_ml | mistake_missing_context | 2888 | 14230 | 20.295
+raw.ai_trust_ml | mistake_other | 2888 | 14230 | 20.295
+raw.ai_trust_ml | mistake_outdated_apis | 2888 | 14230 | 20.295
+raw.ai_trust_ml | mistake_plausible_but_wrong_code | 2888 | 14230 | 20.295
+raw.ai_trust_ml | mistake_poor_debugging_path | 2888 | 14230 | 20.295
+raw.ai_trust_ml | mistake_security_privacy_issue | 2888 | 14230 | 20.295
+raw.ai_trust_ml | monthly_tool_count | 3543 | 14230 | 24.898
+raw.ai_trust_ml | org_ai_approach | 3569 | 14230 | 25.081
+raw.ai_trust_ml | org_ai_use | 3174 | 14230 | 22.305
+raw.ai_trust_ml | org_size_code | 2043 | 14230 | 14.357
+raw.ai_trust_ml | respondent_id | 0 | 14230 | 0.000
+raw.ai_trust_ml | role | 26 | 14230 | 0.183
+raw.ai_trust_ml | so_account | 1598 | 14230 | 11.230
+raw.ai_trust_ml | so_years_code | 1614 | 14230 | 11.342
+raw.ai_trust_ml | task_architecture_design | 3074 | 14230 | 21.602
+raw.ai_trust_ml | task_code_review | 3074 | 14230 | 21.602
+raw.ai_trust_ml | task_codebase_onboarding | 3074 | 14230 | 21.602
+raw.ai_trust_ml | task_complex_technical_questions | 3074 | 14230 | 21.602
+raw.ai_trust_ml | task_data_log_analysis | 3074 | 14230 | 21.602
+raw.ai_trust_ml | task_debugging_refactoring | 3074 | 14230 | 21.602
+raw.ai_trust_ml | task_dev_test_environments | 3074 | 14230 | 21.602
+raw.ai_trust_ml | task_finding_or_fixing_security_issues | 3074 | 14230 | 21.602
+raw.ai_trust_ml | task_generating_code_in_a_familiar_area | 3074 | 14230 | 21.602
+raw.ai_trust_ml | task_generating_code_in_an_unfamiliar_area | 3074 | 14230 | 21.602
+raw.ai_trust_ml | task_internal_knowledge_search | 3074 | 14230 | 21.602
+raw.ai_trust_ml | task_multimedia_generation | 3074 | 14230 | 21.602
+raw.ai_trust_ml | task_product_ux_or_visual_design | 3074 | 14230 | 21.602
+raw.ai_trust_ml | task_production_operations | 3074 | 14230 | 21.602
+raw.ai_trust_ml | task_simple_technical_questions | 3074 | 14230 | 21.602
+raw.ai_trust_ml | task_writing_communication | 3074 | 14230 | 21.602
+raw.ai_trust_ml | task_writing_documentation | 3074 | 14230 | 21.602
+raw.ai_trust_ml | task_writing_or_improving_tests | 3074 | 14230 | 21.602
+raw.ai_trust_ml | task_writing_tickets_plans | 3074 | 14230 | 21.602
+raw.ai_trust_ml | uses_agents | 0 | 14230 | 0.000
+raw.ai_trust_ml | uses_chat_tools | 0 | 14230 | 0.000
+raw.ai_trust_ml | uses_coding_assistants | 0 | 14230 | 0.000
+raw.ai_trust_ml | uses_internal_tools | 0 | 14230 | 0.000
+raw.ai_trust_ml | uses_none | 0 | 14230 | 0.000
+raw.ai_trust_ml | weekly_ai_tool_count | 2374 | 14230 | 16.683
+raw.ai_trust_ml | weekly_hours_searching_info | 4824 | 14230 | 33.900
+raw.ai_trust_ml | work_setting | 1838 | 14230 | 12.916
+raw.ai_trust_ml | years_coding | 316 | 14230 | 2.221
+raw.ai_trust_ml | years_professional | 568 | 14230 | 3.992
+raw.answer_codes | code | 0 | 135 | 0.000
+raw.answer_codes | code_column | 0 | 135 | 0.000
+raw.answer_codes | label | 0 | 135 | 0.000
+raw.answer_codes | label_column | 0 | 135 | 0.000
+raw.data_dictionary | column | 0 | 316 | 0.000
+raw.data_dictionary | description | 0 | 316 | 0.000
+raw.data_dictionary | file | 0 | 316 | 0.000
+raw.data_dictionary | source_column | 17 | 316 | 5.380
+raw.data_dictionary | type | 0 | 316 | 0.000
+raw.multi_select_answers | answer | 0 | 2728527 | 0.000
+raw.multi_select_answers | question | 0 | 2728527 | 0.000
+raw.multi_select_answers | respondent_id | 0 | 2728527 | 0.000
+raw.questions | answer_rule | 0 | 88 | 0.000
+raw.questions | question | 0 | 88 | 0.000
+raw.questions | question_text | 0 | 88 | 0.000
+raw.questions | question_type | 0 | 88 | 0.000
+raw.questions | source_column | 0 | 88 | 0.000
+raw.respondents | accuracy_importance_code_repositories_or_code_comments | 22086 | 30903 | 71.469
+raw.respondents | accuracy_importance_coworkers_or_teammates | 20788 | 30903 | 67.269
+raw.respondents | accuracy_importance_customer_support_or_sales_information | 30553 | 30903 | 98.867
+raw.respondents | accuracy_importance_internal_chat | 24532 | 30903 | 79.384
+raw.respondents | accuracy_importance_internal_docs | 22460 | 30903 | 72.679
+raw.respondents | accuracy_importance_manager_or_leadership | 27732 | 30903 | 89.739
+raw.respondents | accuracy_importance_meeting_notes_or_transcripts | 29404 | 30903 | 95.149
+raw.respondents | accuracy_importance_none_of_these | 30805 | 30903 | 99.683
+raw.respondents | accuracy_importance_not_sure | 30754 | 30903 | 99.518
+raw.respondents | accuracy_importance_official_docs | 26591 | 30903 | 86.047
+raw.respondents | accuracy_importance_past_decisions_or_architecture_records | 28712 | 30903 | 92.910
+raw.respondents | accuracy_importance_product_vendor_or_api_documentation | 26800 | 30903 | 86.723
+raw.respondents | accuracy_importance_project_management_or_ticketing_tools | 28078 | 30903 | 90.858
+raw.respondents | accuracy_importance_stack_overflow | 27535 | 30903 | 89.101
+raw.respondents | accuracy_importance_vendor_forum | 30500 | 30903 | 98.696
+raw.respondents | age_group | 0 | 30903 | 0.000
+raw.respondents | age_group_code | 352 | 30903 | 1.139
+raw.respondents | ai_avoid_reason | 17046 | 30903 | 55.160
+raw.respondents | ai_complex_tasks | 16562 | 30903 | 53.594
+raw.respondents | ai_complex_tasks_code | 17544 | 30903 | 56.771
+raw.respondents | ai_context_control | 17660 | 30903 | 57.147
+raw.respondents | ai_freq_agents | 26376 | 30903 | 85.351
+raw.respondents | ai_freq_agents_code | 13439 | 30903 | 43.488
+raw.respondents | ai_freq_chat_tools | 20051 | 30903 | 64.884
+raw.respondents | ai_freq_chat_tools_code | 13439 | 30903 | 43.488
+raw.respondents | ai_freq_coding_assistants | 19472 | 30903 | 63.010
+raw.respondents | ai_freq_coding_assistants_code | 13439 | 30903 | 43.488
+raw.respondents | ai_freq_internal_tools | 27830 | 30903 | 90.056
+raw.respondents | ai_freq_internal_tools_code | 13439 | 30903 | 43.488
+raw.respondents | ai_memory_owner | 18078 | 30903 | 58.499
+raw.respondents | ai_role_easier_access_to_the_right_tools_or_platforms | 27215 | 30903 | 88.066
+raw.respondents | ai_role_easier_better_processes_workflows_or_coordination | 29661 | 30903 | 95.981
+raw.respondents | ai_role_easier_clear_priorities_or_requirements | 29596 | 30903 | 95.771
+raw.respondents | ai_role_easier_enough_time_staffing_or_resources | 29825 | 30903 | 96.512
+raw.respondents | ai_role_easier_helpful_documentation_or_knowledge_sharing | 30144 | 30903 | 97.544
+raw.respondents | ai_role_easier_reliable_systems_infrastructure_or_environments | 30168 | 30903 | 97.622
+raw.respondents | ai_role_easier_supportive_teammates_managers_or_mentors | 27739 | 30903 | 89.762
+raw.respondents | ai_role_harder_inefficient_processes_workflows_or_coordination | 28265 | 30903 | 91.464
+raw.respondents | ai_role_harder_lack_of_access_to_the_right_tools_or_platforms | 30404 | 30903 | 98.385
+raw.respondents | ai_role_harder_lack_of_support_from_teammates_managers_or_mento | 30154 | 30903 | 97.576
+raw.respondents | ai_role_harder_not_enough_time_staffing_or_resources | 28349 | 30903 | 91.735
+raw.respondents | ai_role_harder_poor_documentation_or_knowledge_sharing | 29620 | 30903 | 95.848
+raw.respondents | ai_role_harder_unclear_priorities_or_requirements | 27894 | 30903 | 90.263
+raw.respondents | ai_role_harder_unreliable_systems_infrastructure_or_environment | 29389 | 30903 | 95.101
+raw.respondents | ai_satisfaction_architecture | 19162 | 30903 | 62.007
+raw.respondents | ai_satisfaction_architecture_code | 19162 | 30903 | 62.007
+raw.respondents | ai_satisfaction_communication | 19218 | 30903 | 62.188
+raw.respondents | ai_satisfaction_communication_code | 19218 | 30903 | 62.188
+raw.respondents | ai_satisfaction_debugging | 19042 | 30903 | 61.619
+raw.respondents | ai_satisfaction_debugging_code | 19042 | 30903 | 61.619
+raw.respondents | ai_satisfaction_design | 19135 | 30903 | 61.920
+raw.respondents | ai_satisfaction_design_code | 19135 | 30903 | 61.920
+raw.respondents | ai_satisfaction_documentation | 19115 | 30903 | 61.855
+raw.respondents | ai_satisfaction_documentation_code | 19115 | 30903 | 61.855
+raw.respondents | ai_satisfaction_implementation | 18982 | 30903 | 61.424
+raw.respondents | ai_satisfaction_implementation_code | 18982 | 30903 | 61.424
+raw.respondents | ai_satisfaction_review | 19135 | 30903 | 61.920
+raw.respondents | ai_satisfaction_review_code | 19135 | 30903 | 61.920
+raw.respondents | ai_sentiment | 16475 | 30903 | 53.312
+raw.respondents | ai_sentiment_code | 16645 | 30903 | 53.862
+raw.respondents | ai_share_of_workday | 19977 | 30903 | 64.644
+raw.respondents | ai_share_of_workday_code | 19977 | 30903 | 64.644
+raw.respondents | ai_source_attribution_importance | 16958 | 30903 | 54.875
+raw.respondents | ai_source_attribution_importance_code | 16958 | 30903 | 54.875
+raw.respondents | ai_tool_switch_reason | 17759 | 30903 | 57.467
+raw.respondents | ai_trust | 16599 | 30903 | 53.713
+raw.respondents | ai_trust_code | 16673 | 30903 | 53.953
+raw.respondents | ai_useful_architecture | 18475 | 30903 | 59.784
+raw.respondents | ai_useful_architecture_code | 20038 | 30903 | 64.842
+raw.respondents | ai_useful_communication | 18489 | 30903 | 59.829
+raw.respondents | ai_useful_communication_code | 20826 | 30903 | 67.392
+raw.respondents | ai_useful_debugging | 18375 | 30903 | 59.460
+raw.respondents | ai_useful_debugging_code | 18979 | 30903 | 61.415
+raw.respondents | ai_useful_design | 18367 | 30903 | 59.434
+raw.respondents | ai_useful_design_code | 20518 | 30903 | 66.395
+raw.respondents | ai_useful_documentation | 18420 | 30903 | 59.606
+raw.respondents | ai_useful_documentation_code | 19678 | 30903 | 63.677
+raw.respondents | ai_useful_implementation | 18357 | 30903 | 59.402
+raw.respondents | ai_useful_implementation_code | 18851 | 30903 | 61.001
+raw.respondents | ai_useful_review | 18454 | 30903 | 59.716
+raw.respondents | ai_useful_review_code | 19696 | 30903 | 63.735
+raw.respondents | coder_type | 109 | 30903 | 0.353
+raw.respondents | comp_usd_yearly | 17396 | 30903 | 56.292
+raw.respondents | compensation_local | 16456 | 30903 | 53.250
+raw.respondents | complacency_driver | 22591 | 30903 | 73.103
+raw.respondents | country | 9533 | 30903 | 30.848
+raw.respondents | currency | 9950 | 30903 | 32.198
+raw.respondents | dept_budget_change | 9988 | 30903 | 32.320
+raw.respondents | dept_budget_change_code | 16745 | 30903 | 54.186
+raw.respondents | education | 142 | 30903 | 0.460
+raw.respondents | employment | 0 | 30903 | 0.000
+raw.respondents | gender | 9754 | 30903 | 31.563
+raw.respondents | ic_or_manager | 6154 | 30903 | 19.914
+raw.respondents | industry | 11994 | 30903 | 38.812
+raw.respondents | job_easier_factor | 12382 | 30903 | 40.067
+raw.respondents | job_harder_factor | 12689 | 30903 | 41.061
+raw.respondents | job_satisfaction | 12027 | 30903 | 38.919
+raw.respondents | late_context_frequency | 18216 | 30903 | 58.946
+raw.respondents | late_context_frequency_code | 18669 | 30903 | 60.412
+raw.respondents | learned_ai_last_year | 2663 | 30903 | 8.617
+raw.respondents | learned_coding_skill_last_year | 1757 | 30903 | 5.686
+raw.respondents | monthly_tool_count | 16067 | 30903 | 51.992
+raw.respondents | org_ai_approach | 18266 | 30903 | 59.108
+raw.respondents | org_ai_use | 17736 | 30903 | 57.392
+raw.respondents | org_size | 9788 | 30903 | 31.673
+raw.respondents | org_size_code | 10310 | 30903 | 33.362
+raw.respondents | recency_importance_code_repositories_or_code_comments | 22307 | 30903 | 72.184
+raw.respondents | recency_importance_coworkers_or_teammates | 21077 | 30903 | 68.204
+raw.respondents | recency_importance_customer_support_or_sales_information | 30562 | 30903 | 98.897
+raw.respondents | recency_importance_internal_chat | 24728 | 30903 | 80.018
+raw.respondents | recency_importance_internal_docs | 22675 | 30903 | 73.375
+raw.respondents | recency_importance_manager_or_leadership | 27823 | 30903 | 90.033
+raw.respondents | recency_importance_meeting_notes_or_transcripts | 29445 | 30903 | 95.282
+raw.respondents | recency_importance_none_of_these | 30810 | 30903 | 99.699
+raw.respondents | recency_importance_not_sure | 30759 | 30903 | 99.534
+raw.respondents | recency_importance_official_docs | 26673 | 30903 | 86.312
+raw.respondents | recency_importance_past_decisions_or_architecture_records | 28768 | 30903 | 93.091
+raw.respondents | recency_importance_product_vendor_or_api_documentation | 26890 | 30903 | 87.014
+raw.respondents | recency_importance_project_management_or_ticketing_tools | 28151 | 30903 | 91.095
+raw.respondents | recency_importance_stack_overflow | 27613 | 30903 | 89.354
+raw.respondents | recency_importance_vendor_forum | 30506 | 30903 | 98.715
+raw.respondents | respondent_id | 0 | 30903 | 0.000
+raw.respondents | role | 5136 | 30903 | 16.620
+raw.respondents | so_account | 13686 | 30903 | 44.287
+raw.respondents | so_years | 13761 | 30903 | 44.530
+raw.respondents | so_years_code | 13761 | 30903 | 44.530
+raw.respondents | traceability_importance_code_repositories_or_code_comments | 22630 | 30903 | 73.229
+raw.respondents | traceability_importance_coworkers_or_teammates | 21446 | 30903 | 69.398
+raw.respondents | traceability_importance_customer_support_or_sales_information | 30575 | 30903 | 98.939
+raw.respondents | traceability_importance_internal_chat | 24970 | 30903 | 80.801
+raw.respondents | traceability_importance_internal_docs | 22978 | 30903 | 74.355
+raw.respondents | traceability_importance_manager_or_leadership | 27972 | 30903 | 90.515
+raw.respondents | traceability_importance_meeting_notes_or_transcripts | 29498 | 30903 | 95.454
+raw.respondents | traceability_importance_none_of_these | 30814 | 30903 | 99.712
+raw.respondents | traceability_importance_not_sure | 30763 | 30903 | 99.547
+raw.respondents | traceability_importance_official_docs | 26813 | 30903 | 86.765
+raw.respondents | traceability_importance_past_decisions_or_architecture_records | 28854 | 30903 | 93.370
+raw.respondents | traceability_importance_product_vendor_or_api_documentation | 26989 | 30903 | 87.335
+raw.respondents | traceability_importance_project_management_or_ticketing_tools | 28277 | 30903 | 91.502
+raw.respondents | traceability_importance_stack_overflow | 27678 | 30903 | 89.564
+raw.respondents | traceability_importance_vendor_forum | 30517 | 30903 | 98.751
+raw.respondents | weekly_ai_tool_count | 18984 | 30903 | 61.431
+raw.respondents | weekly_hours_searching_info | 18897 | 30903 | 61.149
+raw.respondents | work_setting | 6301 | 30903 | 20.390
+raw.respondents | years_coding | 5699 | 30903 | 18.442
+raw.respondents | years_professional | 6296 | 30903 | 20.373
+Result: 316 rows -> reports\profiling\result_06.csv
+
+[16/17] SELECT 'raw multi-select respondent_id not in raw respondents' AS test, COUNT(*) AS violations FROM raw.multi_select_answers a LEFT JOIN raw.respondents r ON a.respondent_id=r.resp
+test | violations
+raw ML respondent_id not in raw respondents | 0
+final answers with missing question | 0
+raw multi-select question not in raw questions | 0
+raw multi-select respondent_id not in raw respondents | 0
+final answers with missing respondent | 0
+Result: 5 rows -> reports\profiling\result_07.csv
+
+[17/17] SELECT 'original respondents' AS metric, COUNT(*) AS value FROM raw.respondents UNION ALL SELECT 'final respondents',COUNT(*) FROM survey.respondents UNION ALL SELECT 'raw multi-se
+respondents_without_recorded_agent_selection
+2151
+Result: 1 rows -> reports\profiling\result_08.csv
+
+SUCCESS: 8 result sets saved in reports\profiling

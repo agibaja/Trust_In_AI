@@ -1,0 +1,8 @@
+﻿table_name,primary_key_columns,pk_status
+answer_options,option_id,PASS
+answers,answer_id,PASS
+question_items,item_id,PASS
+questions,question_code,PASS
+respondents,respondent_id,PASS
+technologies,technology_id,PASS
+work_info,respondent_id,PASS

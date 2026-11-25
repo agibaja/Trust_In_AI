@@ -1,0 +1,75 @@
+SQL source: C:\Users\ainho\Downloads\projectB\sql\verify.sql
+Started: 2026-11-25T11:16:09
+
+[01/04] SELECT 'respondents' AS table_name,COUNT(*) FROM survey.respondents UNION ALL SELECT 'work_info',COUNT(*) FROM survey.work_info UNION ALL SELECT 'questions',COUNT(*) FROM survey.qu
+table_name | count
+respondents | 12825
+work_info | 12825
+questions | 110
+question_items | 45
+technologies | 87
+answer_options | 1486
+answers | 2480940
+Result: 7 rows -> reports\verification\result_01.csv
+
+[02/04] SELECT COUNT(*) AS orphan_answers FROM survey.answers a LEFT JOIN survey.respondents r ON r.respondent_id=a.respondent_id WHERE r.respondent_id IS NULL;
+orphan_answers
+0
+Result: 1 rows -> reports\verification\result_02.csv
+
+[03/04] SELECT conrelid::regclass AS table_name, conname, contype FROM pg_constraint WHERE connamespace='survey'::regnamespace ORDER BY 1,2;
+table_name | conname | contype
+survey.respondents | respondents_pkey | p
+survey.respondents | respondents_respondent_id_not_null | n
+survey.respondents | respondents_years_coding_check | c
+survey.work_info | work_info_pkey | p
+survey.work_info | work_info_respondent_id_fkey | f
+survey.work_info | work_info_respondent_id_not_null | n
+survey.work_info | work_info_years_professional_check | c
+survey.questions | questions_pkey | p
+survey.questions | questions_question_code_not_null | n
+survey.questions | questions_question_text_not_null | n
+survey.questions | questions_question_type_check | c
+survey.questions | questions_question_type_not_null | n
+survey.question_items | question_items_item_code_not_null | n
+survey.question_items | question_items_item_id_not_null | n
+survey.question_items | question_items_pkey | p
+survey.question_items | question_items_question_code_fkey | f
+survey.question_items | question_items_question_code_item_code_key | u
+survey.question_items | question_items_question_code_item_id_key | u
+survey.question_items | question_items_question_code_not_null | n
+survey.technologies | technologies_pkey | p
+survey.technologies | technologies_technology_category_not_null | n
+survey.technologies | technologies_technology_id_not_null | n
+survey.technologies | technologies_technology_name_not_null | n
+survey.technologies | technologies_technology_name_technology_category_key | u
+survey.answer_options | answer_options_option_id_not_null | n
+survey.answer_options | answer_options_option_text_not_null | n
+survey.answer_options | answer_options_pkey | p
+survey.answer_options | answer_options_question_code_fkey | f
+survey.answer_options | answer_options_question_code_not_null | n
+survey.answer_options | answer_options_question_code_option_id_key | u
+survey.answer_options | answer_options_question_code_option_text_key | u
+survey.answer_options | answer_options_technology_id_fkey | f
+survey.answers | answers_answer_id_not_null | n
+survey.answers | answers_pkey | p
+survey.answers | answers_question_code_fkey | f
+survey.answers | answers_question_code_not_null | n
+survey.answers | answers_respondent_id_fkey | f
+survey.answers | answers_respondent_id_not_null | n
+survey.answers | exactly_one_answer_value | c
+survey.answers | valid_question_item | f
+survey.answers | valid_question_option | f
+Result: 41 rows -> reports\verification\result_03.csv
+
+[04/04] SELECT 'respondents.csv' AS file,COUNT(*) FROM raw.respondents UNION ALL SELECT 'ai_trust_ml.csv', COUNT(*) FROM raw.ai_trust_ml UNION ALL SELECT 'questions.csv', COUNT(*) FROM raw
+file | count
+respondents.csv | 30903
+ai_trust_ml.csv | 14230
+questions.csv | 88
+answer_codes.csv | 135
+multi_select_answers.csv | 2728527
+data_dictionary.csv | 316
+Result: 6 rows -> reports\verification\result_04.csv
+
+SUCCESS: 4 result sets saved in reports\verification

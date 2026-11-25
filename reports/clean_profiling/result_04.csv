@@ -1,0 +1,4 @@
+﻿test,violating_groups
+respondent + question + option duplicated,0
+respondent + scalar question duplicated,0
+respondent + matrix item duplicated,0

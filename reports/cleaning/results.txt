@@ -1,0 +1,29 @@
+SQL source: C:\Users\ainho\Downloads\projectB\sql\remove_incomplete_respondents.sql
+Started: 2026-11-24T17:32:27
+
+[01/07] CREATE TEMP TABLE respondents_to_remove AS SELECT r.respondent_id::INTEGER AS respondent_id, COUNT(*) AS total_columns, COUNT(*) FILTER ( WHERE field.value IS NULL OR BTRIM(field.v
+Completed (SELECT 18078)
+
+[02/07] SELECT COUNT(*) AS respondents_to_remove FROM respondents_to_remove;
+respondents_to_remove
+18078
+Result: 1 rows -> reports\cleaning\result_01.csv
+
+[03/07] DELETE FROM survey.answers WHERE respondent_id IN ( SELECT respondent_id FROM respondents_to_remove );
+Completed (DELETE 653304)
+
+[04/07] DELETE FROM survey.work_info WHERE respondent_id IN ( SELECT respondent_id FROM respondents_to_remove );
+Completed (DELETE 18078)
+
+[05/07] DELETE FROM survey.respondents WHERE respondent_id IN ( SELECT respondent_id FROM respondents_to_remove );
+Completed (DELETE 18078)
+
+[06/07] SELECT COUNT(*) AS remaining_respondents FROM survey.respondents;
+remaining_respondents
+12825
+Result: 1 rows -> reports\cleaning\result_02.csv
+
+[07/07] DROP TABLE respondents_to_remove;
+Completed (DROP TABLE)
+
+SUCCESS: 2 result sets saved in reports\cleaning

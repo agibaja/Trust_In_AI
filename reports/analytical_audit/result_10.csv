@@ -1,0 +1,9 @@
+﻿test,question_code,answer_rows,respondents,status
+10 required question coverage,ai_coding_agents_used,33453,10674,PASS
+10 required question coverage,ai_share_of_workday,9533,9533,PASS
+10 required question coverage,ai_trust,12313,12313,PASS
+10 required question coverage,databases_used,33265,9274,PASS
+10 required question coverage,databases_wanted,22273,6782,PASS
+10 required question coverage,languages_used,65417,10343,PASS
+10 required question coverage,languages_with_ai,42731,8279,PASS
+10 required question coverage,tasks_delegated_to_agents,62373,10965,PASS

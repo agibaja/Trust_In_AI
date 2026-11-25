@@ -1,0 +1,71 @@
+SQL source: C:\Users\ainho\Downloads\projectB\sql\analytical_correctness_audit.sql
+Started: 2026-11-25T11:25:58
+
+[01/12] WITH baseline AS ( SELECT COUNT(DISTINCT a.respondent_id) AS source_on_scale FROM survey.answers a JOIN raw.answer_codes c ON c.code_column='ai_trust_code' AND c.label=a.text_value
+test | source_on_scale | view_rows | unique_respondents | invalid_scores | status
+01 trust mapping and uniqueness | 12274 | 12274 | 12274 | 0 | PASS
+Result: 1 rows -> reports\analytical_audit\result_01.csv
+
+[02/12] WITH distribution AS ( SELECT trust_score, COUNT(*) AS n FROM survey.v_ai_trust GROUP BY trust_score ), totals AS ( SELECT COALESCE(SUM(n),0) AS distribution_total FROM distributio
+test | distribution_total | expected_total | status
+02 trust distribution totals | 12274 | 12274 | PASS
+Result: 1 rows -> reports\analytical_audit\result_02.csv
+
+[03/12] WITH role_data AS ( SELECT w.role, COUNT(*)::NUMERIC AS n, SUM(t.trust_score)::NUMERIC AS total FROM survey.v_ai_trust t JOIN survey.work_info w USING (respondent_id) WHERE w.role 
+test | weighted_overall | direct_overall | incorrect_unweighted_role_avg | status
+03 weighted overall trust by role | 1.9055 | 1.9055 | 1.9212 | PASS
+Result: 1 rows -> reports\analytical_audit\result_03.csv
+
+[04/12] WITH segmented AS ( SELECT CASE WHEN trust_score<=1 THEN 'Low' WHEN trust_score=2 THEN 'Medium' ELSE 'High' END AS segment FROM survey.v_ai_trust ) SELECT '04 trust segment partiti
+test | low_count | medium_count | high_count | total | status
+04 trust segment partition | 3394 | 5984 | 2896 | 12274 | PASS
+Result: 1 rows -> reports\analytical_audit\result_04.csv
+
+[05/12] WITH used AS ( SELECT DISTINCT a.respondent_id, ao.option_text AS language FROM survey.answers a JOIN survey.answer_options ao ON ao.option_id=a.option_id WHERE a.question_code='la
+test | languages | invalid_groups | min_pct | max_pct | status
+05 language AI percentage bounds | 49 | 0 | 24.49 | 69.00 | PASS
+Result: 1 rows -> reports\analytical_audit\result_05.csv
+
+[06/12] WITH used AS ( SELECT DISTINCT a.respondent_id, ao.option_text AS language FROM survey.answers a JOIN survey.answer_options ao ON ao.option_id=a.option_id WHERE a.question_code='la
+test | selections_not_in_used | status
+06 AI-language selections not in used-language selections | 5803 | REVIEW
+Result: 1 rows -> reports\analytical_audit\result_06.csv
+
+[07/12] SELECT '07 repeated selected options' AS test, COUNT(*) AS violating_groups, CASE WHEN COUNT(*)=0 THEN 'PASS' ELSE 'FAIL' END AS status FROM (SELECT respondent_id, question_code, o
+test | violating_groups | status
+07 repeated selected options | 0 | PASS
+Result: 1 rows -> reports\analytical_audit\result_07.csv
+
+[08/12] WITH used AS ( SELECT DISTINCT a.respondent_id, ao.technology_id FROM survey.answers a JOIN survey.answer_options ao ON ao.option_id=a.option_id WHERE a.question_code='databases_us
+test | databases | invalid_groups | max_retention_pct | status
+08 database retention subset | 31 | 0 | 62.46 | PASS
+Result: 1 rows -> reports\analytical_audit\result_08.csv
+
+[09/12] WITH usage AS ( SELECT a.respondent_id, a.text_value, c.code FROM survey.answers a LEFT JOIN raw.answer_codes c ON c.code_column='ai_share_of_workday_code' AND c.label=a.text_value
+test | usage_rows | unmatched_codes | nonnumeric_codes | distinct_respondents | status
+09 AI-usage code mapping | 9533 | 0 | 0 | 9533 | PASS
+Result: 1 rows -> reports\analytical_audit\result_09.csv
+
+[10/12] WITH expected(q) AS ( VALUES ('languages_used'),('languages_with_ai'),('databases_used'), ('databases_wanted'),('tasks_delegated_to_agents'),('ai_coding_agents_used'), ('ai_share_o
+test | question_code | answer_rows | respondents | status
+10 required question coverage | ai_coding_agents_used | 33453 | 10674 | PASS
+10 required question coverage | ai_share_of_workday | 9533 | 9533 | PASS
+10 required question coverage | ai_trust | 12313 | 12313 | PASS
+10 required question coverage | databases_used | 33265 | 9274 | PASS
+10 required question coverage | databases_wanted | 22273 | 6782 | PASS
+10 required question coverage | languages_used | 65417 | 10343 | PASS
+10 required question coverage | languages_with_ai | 42731 | 8279 | PASS
+10 required question coverage | tasks_delegated_to_agents | 62373 | 10965 | PASS
+Result: 8 rows -> reports\analytical_audit\result_10.csv
+
+[11/12] WITH counts AS ( SELECT r.country, ao.option_text AS language, COUNT(DISTINCT a.respondent_id) AS users FROM survey.answers a JOIN survey.respondents r USING (respondent_id) JOIN s
+test | countries | countries_with_rank_one | status
+11 country ranking starts at one | 143 | 143 | PASS
+Result: 1 rows -> reports\analytical_audit\result_11.csv
+
+[12/12] WITH totals AS ( SELECT COUNT(*) AS n_all FROM survey.eligible_respondents(NULL,NULL,NULL,NULL,NULL) ), filtered AS ( SELECT COUNT(*) AS n_spain FROM survey.eligible_respondents(AR
+test | n_all | n_spain | status
+12 demographic filter subset | 12825 | 273 | PASS
+Result: 1 rows -> reports\analytical_audit\result_12.csv
+
+SUCCESS: 12 result sets saved in reports\analytical_audit

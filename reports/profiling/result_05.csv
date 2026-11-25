@@ -1,0 +1,7 @@
+﻿source_table,candidate_key,rows_total,missing_key,distinct_nonmissing,duplicate_excess,assessment
+raw.ai_trust_ml,respondent_id,14230,0,14230,0,VALID CANDIDATE KEY
+raw.answer_codes,"(code_column, code)",135,0,135,0,VALID CANDIDATE KEY
+raw.data_dictionary,"(file, column)",316,0,316,0,VALID CANDIDATE KEY
+raw.multi_select_answers,"(respondent_id, question, answer)",2728527,0,2728527,0,VALID CANDIDATE KEY
+raw.questions,question,88,0,88,0,VALID CANDIDATE KEY
+raw.respondents,respondent_id,30903,0,30903,0,VALID CANDIDATE KEY

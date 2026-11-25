@@ -1,0 +1,92 @@
+SQL source: C:\Users\ainho\Downloads\projectB\sql\clean_data_profiling.sql
+Started: 2026-11-25T11:17:15
+
+[01/10] WITH missing AS ( SELECT r.respondent_id::INTEGER AS respondent_id, count(*) AS fields_checked, count(*) FILTER (WHERE v.value IS NULL OR btrim(v.value)='') AS missing_fields FROM 
+raw_respondents | should_keep | should_remove | incorrectly_removed | incorrectly_retained | actually_retained
+30903 | 12825 | 18078 | 0 | 0 | 12825
+Result: 1 rows -> reports\clean_profiling\result_01.csv
+
+[02/10] SELECT 'raw_all' AS population, count(*) AS respondents, count(*) FILTER (WHERE nullif(btrim(ai_trust),'') IS NOT NULL) AS ai_trust_answered, round(100.0*count(*) FILTER (WHERE nul
+population | respondents | ai_trust_answered | pct
+raw_all | 30903 | 14304 | 46.29
+survey_retained | 12825 | 12313 | 96.01
+Result: 2 rows -> reports\clean_profiling\result_02.csv
+
+[03/10] WITH cell_values AS ( SELECT 'respondents' AS table_name, x.key AS column_name, x.value AS value FROM survey.respondents r CROSS JOIN LATERAL jsonb_each_text(to_jsonb(r)) x(key,val
+table_name | column_name | rows_total | missing_count | missing_pct
+respondents | age_group | 12825 | 0 | 0.00
+respondents | coder_type | 12825 | 4 | 0.03
+respondents | country | 12825 | 0 | 0.00
+respondents | education | 12825 | 6 | 0.05
+respondents | gender | 12825 | 39 | 0.30
+respondents | respondent_id | 12825 | 0 | 0.00
+respondents | so_account | 12825 | 702 | 5.47
+respondents | so_years | 12825 | 715 | 5.58
+respondents | years_coding | 12825 | 158 | 1.23
+work_info | comp_usd_yearly | 12825 | 3225 | 25.15
+work_info | compensation_local | 12825 | 2861 | 22.31
+work_info | currency | 12825 | 72 | 0.56
+work_info | dept_budget_change | 12825 | 1056 | 8.23
+work_info | employment | 12825 | 0 | 0.00
+work_info | ic_or_manager | 12825 | 1059 | 8.26
+work_info | industry | 12825 | 1055 | 8.23
+work_info | job_satisfaction | 12825 | 1053 | 8.21
+work_info | org_ai_approach | 12825 | 1800 | 14.04
+work_info | org_ai_use | 12825 | 1433 | 11.17
+work_info | org_size | 12825 | 1030 | 8.03
+work_info | respondent_id | 12825 | 0 | 0.00
+work_info | role | 12825 | 8 | 0.06
+work_info | work_setting | 12825 | 1035 | 8.07
+work_info | years_professional | 12825 | 289 | 2.25
+Result: 24 rows -> reports\clean_profiling\result_03.csv
+
+[04/10] SELECT 'respondent + question + option duplicated' AS test, count(*) AS violating_groups FROM ( SELECT respondent_id,question_code,option_id FROM survey.answers WHERE option_id IS 
+test | violating_groups
+respondent + question + option duplicated | 0
+respondent + scalar question duplicated | 0
+respondent + matrix item duplicated | 0
+Result: 3 rows -> reports\clean_profiling\result_04.csv
+
+[05/10] SELECT q.question_code,q.question_type,count(*) AS n_answers, count(*) FILTER (WHERE a.option_id IS NOT NULL) AS n_option, count(*) FILTER (WHERE a.numeric_value IS NOT NULL) AS n_
+question_code | question_type | n_answers | n_option | n_numeric | n_text | n_matrix_items
+Result: 0 rows -> reports\clean_profiling\result_05.csv
+
+[06/10] SELECT 'questions without answers' AS category,count(*) AS unused FROM survey.questions q WHERE NOT EXISTS ( SELECT 1 FROM survey.answers a WHERE a.question_code=q.question_code) U
+category | unused
+technologies without used answer_options | 0
+questions without answers | 0
+question_items without answers | 0
+answer_options without answers | 0
+Result: 4 rows -> reports\clean_profiling\result_06.csv
+
+[07/10] SELECT 'original questions missing in survey catalog' AS test,count(*) AS total FROM raw.questions q LEFT JOIN survey.questions s ON s.question_code=q.question WHERE s.question_cod
+test | total
+original questions missing in survey catalog | 17
+survey question codes not in original question catalog | 39
+Result: 2 rows -> reports\clean_profiling\result_07.csv
+
+[08/10] SELECT COALESCE(NULLIF(btrim(r.ai_trust),''),'(missing)') AS ai_trust_value, count(*) AS original_count, count(s.respondent_id) AS retained_count, round(100.0*count(s.respondent_id
+ai_trust_value | original_count | retained_count | pct_of_group_retained
+(missing) | 16599 | 512 | 3.08
+I trust it when I can easily verify the output | 6872 | 5984 | 87.08
+I trust it for many tasks, but not important work decisions | 2329 | 2060 | 88.45
+I trust it for low-risk work tasks only | 2326 | 1897 | 81.56
+I do not trust it for most work tasks | 1754 | 1497 | 85.35
+I trust it for many tasks, including important work decisions | 949 | 836 | 88.09
+Not sure / I do not use AI tools | 74 | 39 | 52.70
+Result: 7 rows -> reports\clean_profiling\result_08.csv
+
+[09/10] SELECT count(*) AS work_rows, min(years_professional) AS years_professional_min, max(years_professional) AS years_professional_max, min(compensation_local) AS compensation_local_mi
+work_rows | years_professional_min | years_professional_max | compensation_local_min | compensation_local_max | comp_usd_min | comp_usd_max
+12825 | 1 | 100 | 0.0 | 99999999999999.0 | 1.0 | 31919350.0
+Result: 1 rows -> reports\clean_profiling\result_09.csv
+
+[10/10] SELECT question_type,count(*) AS questions, count(*) FILTER (WHERE EXISTS ( SELECT 1 FROM survey.answers a WHERE a.question_code=q.question_code)) AS questions_with_answers FROM su
+question_type | questions | questions_with_answers
+matrix | 3 | 3
+multi | 71 | 71
+numeric | 3 | 3
+single | 33 | 33
+Result: 4 rows -> reports\clean_profiling\result_10.csv
+
+SUCCESS: 10 result sets saved in reports\clean_profiling

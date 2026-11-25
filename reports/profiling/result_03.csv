@@ -1,0 +1,54 @@
+﻿table_name,constraint_name,kind,definition
+survey.respondents,respondents_years_coding_check,CHECK,CHECK ((years_coding >= 0))
+survey.respondents,respondents_respondent_id_not_null,n,NOT NULL respondent_id
+survey.respondents,respondents_pkey,PRIMARY KEY,PRIMARY KEY (respondent_id)
+survey.work_info,work_info_years_professional_check,CHECK,CHECK ((years_professional >= 0))
+survey.work_info,work_info_respondent_id_fkey,FOREIGN KEY,FOREIGN KEY (respondent_id) REFERENCES survey.respondents(respondent_id)
+survey.work_info,work_info_respondent_id_not_null,n,NOT NULL respondent_id
+survey.work_info,work_info_pkey,PRIMARY KEY,PRIMARY KEY (respondent_id)
+survey.questions,questions_question_type_check,CHECK,"CHECK ((question_type = ANY (ARRAY['single'::text, 'multi'::text, 'matrix'::text, 'numeric'::text, 'text'::text])))"
+survey.questions,questions_question_code_not_null,n,NOT NULL question_code
+survey.questions,questions_question_text_not_null,n,NOT NULL question_text
+survey.questions,questions_question_type_not_null,n,NOT NULL question_type
+survey.questions,questions_pkey,PRIMARY KEY,PRIMARY KEY (question_code)
+survey.question_items,question_items_question_code_fkey,FOREIGN KEY,FOREIGN KEY (question_code) REFERENCES survey.questions(question_code)
+survey.question_items,question_items_item_code_not_null,n,NOT NULL item_code
+survey.question_items,question_items_item_id_not_null,n,NOT NULL item_id
+survey.question_items,question_items_question_code_not_null,n,NOT NULL question_code
+survey.question_items,question_items_pkey,PRIMARY KEY,PRIMARY KEY (item_id)
+survey.question_items,question_items_question_code_item_code_key,UNIQUE,"UNIQUE (question_code, item_code)"
+survey.question_items,question_items_question_code_item_id_key,UNIQUE,"UNIQUE (question_code, item_id)"
+survey.technologies,technologies_technology_category_not_null,n,NOT NULL technology_category
+survey.technologies,technologies_technology_id_not_null,n,NOT NULL technology_id
+survey.technologies,technologies_technology_name_not_null,n,NOT NULL technology_name
+survey.technologies,technologies_pkey,PRIMARY KEY,PRIMARY KEY (technology_id)
+survey.technologies,technologies_technology_name_technology_category_key,UNIQUE,"UNIQUE (technology_name, technology_category)"
+survey.answer_options,answer_options_question_code_fkey,FOREIGN KEY,FOREIGN KEY (question_code) REFERENCES survey.questions(question_code)
+survey.answer_options,answer_options_technology_id_fkey,FOREIGN KEY,FOREIGN KEY (technology_id) REFERENCES survey.technologies(technology_id)
+survey.answer_options,answer_options_option_id_not_null,n,NOT NULL option_id
+survey.answer_options,answer_options_option_text_not_null,n,NOT NULL option_text
+survey.answer_options,answer_options_question_code_not_null,n,NOT NULL question_code
+survey.answer_options,answer_options_pkey,PRIMARY KEY,PRIMARY KEY (option_id)
+survey.answer_options,answer_options_question_code_option_id_key,UNIQUE,"UNIQUE (question_code, option_id)"
+survey.answer_options,answer_options_question_code_option_text_key,UNIQUE,"UNIQUE (question_code, option_text)"
+survey.answers,exactly_one_answer_value,CHECK,"CHECK ((((
+CASE
+    WHEN (option_id IS NOT NULL) THEN 1
+    ELSE 0
+END +
+CASE
+    WHEN (numeric_value IS NOT NULL) THEN 1
+    ELSE 0
+END) +
+CASE
+    WHEN (text_value IS NOT NULL) THEN 1
+    ELSE 0
+END) = 1))"
+survey.answers,answers_question_code_fkey,FOREIGN KEY,FOREIGN KEY (question_code) REFERENCES survey.questions(question_code)
+survey.answers,answers_respondent_id_fkey,FOREIGN KEY,FOREIGN KEY (respondent_id) REFERENCES survey.respondents(respondent_id)
+survey.answers,valid_question_item,FOREIGN KEY,"FOREIGN KEY (question_code, item_id) REFERENCES survey.question_items(question_code, item_id)"
+survey.answers,valid_question_option,FOREIGN KEY,"FOREIGN KEY (question_code, option_id) REFERENCES survey.answer_options(question_code, option_id)"
+survey.answers,answers_answer_id_not_null,n,NOT NULL answer_id
+survey.answers,answers_question_code_not_null,n,NOT NULL question_code
+survey.answers,answers_respondent_id_not_null,n,NOT NULL respondent_id
+survey.answers,answers_pkey,PRIMARY KEY,PRIMARY KEY (answer_id)

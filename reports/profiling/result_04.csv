@@ -1,0 +1,18 @@
+﻿table_name,indexname,indexdef
+answer_options,answer_options_pkey,CREATE UNIQUE INDEX answer_options_pkey ON survey.answer_options USING btree (option_id)
+answer_options,answer_options_question_code_option_id_key,"CREATE UNIQUE INDEX answer_options_question_code_option_id_key ON survey.answer_options USING btree (question_code, option_id)"
+answer_options,answer_options_question_code_option_text_key,"CREATE UNIQUE INDEX answer_options_question_code_option_text_key ON survey.answer_options USING btree (question_code, option_text)"
+answers,answers_pkey,CREATE UNIQUE INDEX answers_pkey ON survey.answers USING btree (answer_id)
+answers,ix_answer_question,CREATE INDEX ix_answer_question ON survey.answers USING btree (question_code)
+answers,ix_answer_respondent,CREATE INDEX ix_answer_respondent ON survey.answers USING btree (respondent_id)
+answers,uq_answer_matrix_scalar,"CREATE UNIQUE INDEX uq_answer_matrix_scalar ON survey.answers USING btree (respondent_id, question_code, item_id) WHERE ((item_id IS NOT NULL) AND (option_id IS NULL))"
+answers,uq_answer_option_selected,"CREATE UNIQUE INDEX uq_answer_option_selected ON survey.answers USING btree (respondent_id, question_code, option_id) WHERE ((option_id IS NOT NULL) AND (item_id IS NULL))"
+answers,uq_answer_scalar,"CREATE UNIQUE INDEX uq_answer_scalar ON survey.answers USING btree (respondent_id, question_code) WHERE ((option_id IS NULL) AND (item_id IS NULL))"
+question_items,question_items_pkey,CREATE UNIQUE INDEX question_items_pkey ON survey.question_items USING btree (item_id)
+question_items,question_items_question_code_item_code_key,"CREATE UNIQUE INDEX question_items_question_code_item_code_key ON survey.question_items USING btree (question_code, item_code)"
+question_items,question_items_question_code_item_id_key,"CREATE UNIQUE INDEX question_items_question_code_item_id_key ON survey.question_items USING btree (question_code, item_id)"
+questions,questions_pkey,CREATE UNIQUE INDEX questions_pkey ON survey.questions USING btree (question_code)
+respondents,respondents_pkey,CREATE UNIQUE INDEX respondents_pkey ON survey.respondents USING btree (respondent_id)
+technologies,technologies_pkey,CREATE UNIQUE INDEX technologies_pkey ON survey.technologies USING btree (technology_id)
+technologies,technologies_technology_name_technology_category_key,"CREATE UNIQUE INDEX technologies_technology_name_technology_category_key ON survey.technologies USING btree (technology_name, technology_category)"
+work_info,work_info_pkey,CREATE UNIQUE INDEX work_info_pkey ON survey.work_info USING btree (respondent_id)
