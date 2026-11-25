@@ -1,0 +1,24 @@
+# Credentials
+password.txt
+.env
+.streamlit/secrets.toml
+
+# Downloaded data
+archive.zip
+data/
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Virtual environments
+.venv/
+venv/
+.envs/
+
+# Editor configuration
+.vscode/
+
+# Generated outputs
+reports/
