@@ -12,8 +12,11 @@ WHERE a.question_code = 'ai_trust'
   AND c.code ~ '^[0-4]$';
 
 CREATE OR REPLACE FUNCTION survey.eligible_respondents(
-    p_countries TEXT[], p_roles TEXT[], p_age_groups TEXT[],
-    p_min_years INTEGER, p_max_years INTEGER
+    p_countries TEXT[], 
+    p_roles TEXT[], 
+    p_age_groups TEXT[],
+    p_min_years INTEGER, 
+    p_max_years INTEGER
 ) RETURNS TABLE(respondent_id INTEGER)
 LANGUAGE sql STABLE AS $$
     SELECT r.respondent_id
