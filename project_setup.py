@@ -42,7 +42,7 @@ def main() -> int:
         "test_dashboard_queries.py", "dashboard.py", "password.txt",
     ]
     if not args.skip_install:
-        required.append("requirements-dashboard.txt")
+        required.append("requirements.txt")
     if not args.skip_audit:
         required.append("sql/analytical_correctness_audit.sql")
     for filename in required:
@@ -70,8 +70,7 @@ def main() -> int:
     ]
     try:
         if not args.skip_install:
-            run_step("Install Python dependencies", "-m", "pip", "install", "-r", "requirements-dashboard.txt")
-            run_step("Install Kaggle download dependency", "-m", "pip", "install", "kagglehub")
+            run_step("Install project dependencies","-m", "pip", "install", "-r", "requirements.txt")
         for label, command in steps:
             run_step(label, *command)
         if not args.skip_audit:
