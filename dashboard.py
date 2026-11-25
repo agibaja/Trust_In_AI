@@ -331,51 +331,28 @@ def labeled_scatter(rows, x, y, label, size=None, max_points=35, color_title=Non
 
 
 
-def readable_respondent_profile(rows):
-    """Collapse repeated question rows and omit NULL answer fields for display only."""
+def readable_respondent_profile(rows, grouped_rows):
+    """Show original respondent metadata and SQL-grouped answers, without Python aggregation."""
     if not rows:
         st.info('No respondent information was found for this ID.')
         return
     record = rows[0]
     st.markdown('**Respondent summary**')
-    identity = [('Respondent ID','respondent_id'),('Age group','age_group'),
-                ('Gender','gender'),('Country','country'),('Education','education'),
-                ('Coder type','coder_type'),('Job role','role'),('Industry','industry'),
-                ('Organization size','org_size')]
-    summary = [{'Field':title,'Value':str(record[key])} for title,key in identity
+    identity = [('Respondent ID', 'respondent_id'), ('Age group', 'age_group'),
+                ('Gender', 'gender'), ('Country', 'country'), ('Education', 'education'),
+                ('Coder type', 'coder_type'), ('Job role', 'role'), ('Industry', 'industry'),
+                ('Organization size', 'org_size')]
+    summary = [{'Field': title, 'Value': str(record[key])} for title, key in identity
                if record.get(key) is not None and str(record[key]).strip()]
-    st.dataframe(summary,use_container_width=True,hide_index=True)
-    grouped={}
-    for row in rows:
-        question=row.get('question_code')
-        if not question:
-            continue
-        topic=row.get('topic') or 'Other'
-        item=row.get('item_code')
-        item_label=f'{item}: ' if item is not None and str(item).strip() else ''
-        candidates=[row.get('option_text'),row.get('text_value'),row.get('numeric_value')]
-        answer=next((str(v) for v in candidates if v is not None and str(v).strip()), None)
-        if answer is None:continue
-        group=grouped.setdefault(topic,{})
-        question_text = str(row.get('question_text') or '').strip() or str(question)
-        entry = group.setdefault(str(question), {'label': question_text, 'selections': []})
-        selections = entry['selections']
-        value=item_label+answer
-        if value not in selections:
-            selections.append(value)
+    st.dataframe(summary, use_container_width=True, hide_index=True)
     st.markdown('**Recorded answers grouped by question**')
-
-    if not grouped:
+    if grouped_rows is None:
+        st.error('The SQL aggregation query could not be executed.')
+    elif not grouped_rows:
         st.info('No non-empty answers are recorded for this respondent.')
-        return
-    total_questions=sum(len(questions) for questions in grouped.values())
-
-    for topic, questions in sorted(grouped.items()):
-        with st.expander(f'{topic} · {len(questions)} questions', expanded=(len(grouped) < 4)):
-            formatted=[{'Question': entry['label'], 'Answer(s)': ' · '.join(entry['selections'])}
-                       for _,entry in sorted(questions.items(), key=lambda item: item[1]['label'].casefold())]
-            st.dataframe(formatted,use_container_width=True,hide_index=True)
-
+    else:
+        # PostgreSQL performs DISTINCT, STRING_AGG, GROUP BY, and ORDER BY.
+        st.dataframe(grouped_rows, use_container_width=True, hide_index=True)
 
 def map_countries(rows,country_col,value_col,caption=''):
     """Country-name choropleth: uses Plotly's geographic dataset, no geocoding or personal location."""
@@ -423,8 +400,11 @@ if section=='Respondents':
         rid=st.number_input('Respondent ID',min_value=1,value=int(options['example_respondent']),step=1)
         rows=fetch('02_respondent_profile.sql',respondent_id=int(rid)) if st.button('Load individual responses') else None
         if rows is not None:
-            readable_respondent_profile(rows)
+            readable_rows=fetch('02_respondent_answers_readable.sql',respondent_id=int(rid))
+            readable_respondent_profile(rows, readable_rows)
         source_below_chart('02_respondent_profile.sql')
+        with st.expander('SQL helper used for readable answers'):
+            st.code((QUERIES/'02_respondent_answers_readable.sql').read_text(encoding='utf-8'),language='sql')
         if rows is not None:
             with st.expander('Original SQL result · all rows and nullable fields'):
                 results(rows,max_rows=1200,name='02_respondent_profile.sql')
