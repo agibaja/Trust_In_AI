@@ -17,9 +17,11 @@ Key files and directories:
 
 ```text
 projectB/
+├── .gitignore
 ├── README.md
-├── project_setup.py                  # Optional setup orchestrator, if included
-├── download_data.py                 # Download/validate source archive
+|
+├── project_setup.py                # Setup orchestrator, destructive
+├── download_data.py                # Download/validate source archive
 ├── connect_db.py                   # Connect/create PostgreSQL database
 ├── build_schema.py                 # Create database schemas (destructive)
 ├── load_raw2db.py                  # Import, transform, and clean data
@@ -28,19 +30,23 @@ projectB/
 ├── run_profiling.py                # Original-data profiling
 ├── run_clean_profiling.py          # Cleaned-data profiling
 ├── test_dashboard_queries.py       # Parameterized SQL query tests
+|
 ├── dashboard.py                    # Streamlit interface (latest design: v5)
 ├── db_dashboard.py                 # PostgreSQL connection/query helper
-├── password.txt                    # Local credential; never commit
-├── requirements-dashboard.txt
-├── requirements-visuals.txt        # Additional visual dependencies, if present
+|
+├── requirements.txt
+|
 ├── dashboard_queries/
 │   ├── 01_demographic.sql
+│   ├── 02_respondent_answers_readable.sql
 │   ├── 02_respondent_profile.sql
 │   ├── 03_trust_distribution.sql
 │   ├── ...
-│   ├── 10_task_kind_histogram.sql   # Supporting histogram query
-│   ├── 13_language_count_histogram.sql  # Supporting histogram query
-│   └── 14_language_ranks.sql
+│   ├── 13_multilingual_above_average.sql
+│   ├── 14_language_ranks.sql
+│   ├── 14_map_languages.sql
+│   └── 15_data_maintenance.sql
+|
 ├── sql/
 │   ├── schema.sql
 │   ├── transform.sql
@@ -48,29 +54,43 @@ projectB/
 │   ├── setup_dashboard_helpers.sql
 │   ├── data_profiling.sql
 │   ├── clean_data_profiling.sql
-│   └── analytical_correctness_audit.sql  # If retained
-└── reports/                        # Generated reports
+│   ├── analytical_correctness_audit.sql
+│   ├── check_outliers.sql
+│   ├── diagnostic_08.sql
+│   ├── row_missingness.sql
+│   └── verify.sql
+|
+└── reports/
+    ├── analytical_audit/
+    ├── cleaning/
+    ├── clean_profiling/
+    ├── dashboard_setup/
+    ├── language_mismatches/
+    ├── outliers/
+    ├── profiling/
+    ├── query_tests/
+    └── verification/                     
 ```
 
-The tree is illustrative: keep all other scripts and SQL files already present in your project. **Do not replace the validated `dashboard_queries/` files with older versions from earlier update packages.** In particular, Q8 must be the version exposing both AI-adoption and unmatched-selection percentages.
+The tree is illustrative: keep all other scripts and SQL files already present in your project. **Once run, do not replace the validated `dashboard_queries/` files with older versions from earlier update packages.**
 
 ## 2. Requirements and initial configuration
 
-- Windows with Anaconda/Miniconda and the `info_tech` environment, or an equivalent Python environment.
+- Windows with an Anaconda/Miniconda environment, or an equivalent Python environment.
 - Running PostgreSQL with a valid connection configuration for the `ai_survey` database.
 - The project's connection credentials (locally stored in `password.txt` as expected by the existing scripts).
 - Network access for the initial Kaggle download if `archive.zip` is absent.
 
-Activate the environment and enter the **actual** location of the cloned/extracted project:
+Activate the environment and enter the **actual** location of the cloned/extracted project and your environment name:
 
 ```cmd
-conda activate info_tech
+conda activate info_tech_env
 cd C:\path\to\projectB
 python -m pip install -r requirements-dashboard.txt
 python -m pip install kagglehub "plotly>=5.18,<7"
 ```
 
-The dashboard uses Streamlit, Altair, Plotly and psycopg2. Install any additional dependencies declared by your project's scripts. Source Sans Pro is loaded via CSS/Google Fonts when available, with a sans-serif fallback; font binaries are **not** distributed with this repository.
+The dashboard uses Streamlit, Altair, Plotly and psycopg2. Install any additional dependencies declared by the project's scripts. Source Sans Pro is loaded via CSS/Google Fonts when available, with a sans-serif fallback; font binaries are **not** distributed with this repository.
 
 ## 3. Complete initialization from scratch
 
@@ -125,7 +145,7 @@ Follow its confirmation prompt: it performs a destructive rebuild. This README's
 
 ## 4. Daily use: run the dashboard without rebuilding
 
-Once the database and helpers exist, there is no reason to rerun the ETL or profiling merely to open the interface:
+Once the database and helpers exist, there is no reason to rerun the ETL or profiling; simply, to open the interface:
 
 ```cmd
 conda activate info_tech
@@ -175,23 +195,23 @@ The app has five **top-navigation** sections:
 1. **Respondents** — Q1–Q2: demographic distribution, country map where applicable, and readable individual respondent profiles.
 2. **Trust in AI** — Q3–Q7: trust distribution, role averages, deviations from the overall average, experience buckets, and trust segments.
 3. **AI adoption and usage** — Q8–Q11: AI-assisted language shares and mismatches, agent tools, delegated tasks, and AI usage versus trust.
-4. **Technology landscape** — Q12–Q14: database retention, number of languages, and **language rankings by country**.
+4. **Technology landscape** — Q12–Q14: database retention, number of languages, and language rankings by country.
 5. **Data maintenance** — Q15: a controlled deletion demonstration using a transaction that is rolled back.
 
-Visualizations include bar charts, donut/pie charts, line graphs, scatter/bubble charts, SQL-backed discrete histograms, and country maps. Not every visualization is applicable to every query. Histogram frequency calculations are in `10_task_kind_histogram.sql` and `13_language_count_histogram.sql`, without using pandas as an analytical processing layer.
+Visualizations include bar charts, donut/pie charts, line graphs, scatter/bubble charts, SQL-backed discrete histograms, and country maps. Not every visualization is applicable to every query. Histogram frequency calculations are in `10_task_kind_histogram.sql` and `13_language_count_histogram.sql`, without using pandas as an analytical processing layer. Q2 and Q14 also have helper queries for visualization, `02_respondent_answers_readable.sql` and `14_map_languages.sql` respectively.
 
 ### Current visual conventions (v5)
 
-- Blue-themed design inspired by the team's presentation, with **Source Sans Pro Regular**, a gradient title banner, and top navigation.
-- **Ainhoa Gibaja** and **Ana Caro Casares** appear at the **bottom-right of the title banner**.
+- Blue-themed design inspired by the team's presentation, with **Source Sans Pro Regular**, a gradient title banner, and top navigation. Original presentation template can be found via [SlidesCarnival](https://www.slidescarnival.com/template/modern-pitch-deck/30817).
+
 - Complete research questions are used as headings. Advanced-query asterisks were removed from the interface headings; the report may retain that notation.
-- The SQL text appears **below** each chart, followed by the result preview. Q2 and Q15 show SQL below their interaction because they do not have conventional charts.
+- The SQL text appears **below** each chart, followed by the result preview. Q2 and Q15 show SQL below their interaction because they do not have conventional charts the way other queries do.
 - Q2 shows human-readable question text from `survey.questions.question_text`; multiple answers for one question are grouped together and empty answer values are suppressed in the readable view. The original SQL results remain available.
 - Trust **average** charts use a consistent **Y-axis range of 0–4**, where appropriate. Difference-from-average charts retain negative values, displayed in **red**; nonnegative bars are blue.
 - Ordinal/numeric X-axis categories use their natural ascending order (trust scores, age ranges, experience ranges, discrete histogram counts). Countries and programming languages may be ordered by frequency or the query's selected ranking.
 - Q3's two charts use aligned heights. Bubble plots for Q8, Q9, and Q12 show item names and use color and bubble size to convey additional metrics; hover details and label-density controls improve readability.
 - Q1's **age groups use a bar chart** rather than a pie chart. The geographic views are shown for country-based analyses; some nonstandard country names may not resolve on a map.
-- Interface content is in English and avoids unnecessary explanatory captions.
+
 
 ### Filters and security
 
@@ -202,15 +222,5 @@ Demographic filters affect the queries that explicitly invoke `survey.eligible_r
 ## 7. Updating files safely
 
 The dashboard's appearance can be changed independently from the database and queries. For visual-only updates, replace **`dashboard.py`**; do not overwrite your tested SQL files or rerun the ETL.
-
-The Q2 human-readable question-title enhancement additionally requires the updated **`dashboard_queries/02_respondent_profile.sql`**, which returns `question_text` while retaining `question_code` for identity. The Q7 experience view requires a query that returns `grouping`, `segment`, and `respondents`, with experience buckets rather than job roles.
-
-Other patch-specific changes from earlier releases have been incorporated into the current dashboard design; do not apply the v2/v3/v4/v5 update archives sequentially on top of an already updated project.
-
-## 8. Verification limits and submission guidance
-
-The dashboard code was syntax-checked during development, but its final interactive rendering and actual database connections must be verified **on the project machine**. Test Q2, Q3, Q5–Q9, Q11–Q12, and Q14 after updates, particularly ordered categories, trust-axis scales, negative bars, labeled bubbles, and the Q7 experience grouping.
-
-For the assignment, include a relational model/ER diagram, meaningful SQL queries with the question, SQL, sample result, and interpretation, screenshots of at least four different interactive SQL-backed charts, verification/cleaning evidence, a reproducible initialization procedure, and an accurate disclosure of AI assistance and independent checks.
 
 Keep secrets and locally generated artifacts out of source control, including `password.txt`, `archive.zip`, and unnecessary generated data/report files. Do not commit proprietary or unverified download credentials.
