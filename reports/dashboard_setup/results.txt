@@ -1,5 +1,5 @@
-SQL source: C:\Users\ainho\Downloads\projectB\sql\setup_dashboard_helpers.sql
-Started: 2026-11-25T11:17:35
+SQL source: C:\Users\User\Documents\GitHub\Trust_In_AI\sql\setup_dashboard_helpers.sql
+Started: 2026-11-25T18:37:27
 
 [01/02] CREATE OR REPLACE VIEW survey.v_ai_trust AS SELECT a.respondent_id, c.code::INTEGER AS trust_score, a.text_value AS trust_label FROM survey.answers a JOIN raw.answer_codes c ON c.c
 Completed (CREATE VIEW)

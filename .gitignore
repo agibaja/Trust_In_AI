@@ -9,7 +9,7 @@ data/
 
 # Python
 __pycache__/
-*.pyc
+*.py[cod]
 .ipynb_checkpoints/
 
 # Virtual environments

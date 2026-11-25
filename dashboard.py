@@ -5,7 +5,7 @@ from db_dashboard import run_query, rollback_delete_demo, fetch_filters, QUERIES
 
 st.set_page_config(page_title="Developer Trust in AI | Project B", page_icon="✦", layout="wide", initial_sidebar_state="collapsed")
 
-# Visual language adapted from the supplied RFID presentation:
+# Visual language:
 # ultramarine + saturated violet, airy lilac/ice-blue surfaces, fine rules,
 # numbered circles, and restrained iridescent accents.
 st.markdown("""<style>
@@ -88,7 +88,7 @@ from numbers import Number
 import plotly.graph_objects as go
 import re
 
-# Explicitly mirror the questions agreed by the team (report, Section 5).
+# Mirror the questions agreed by the team (report, Section 5).
 QUESTIONS = {
   1: 'How are respondents distributed across a demographic of the user’s choice?',
   2: 'What does the full record of one specific respondent look like?',
@@ -110,7 +110,7 @@ ADVANCED={5,6,7,8,10,11,13,14}
 AUTHORS={1:'Ainhoa',2:'Ana Caro',3:'Ainhoa',4:'Ana Caro',5:'Ana Caro',6:'Ainhoa',
          7:'Ainhoa',8:'Ainhoa',9:'Ana Caro',10:'Ainhoa',11:'Ana Caro',12:'Ainhoa',
          13:'Ana Caro',14:'Ana Caro',15:'Ana Caro'}
-SECTIONS=['Respondents','Trust in AI','AI adoption and usage','Technology landscape','Data maintenance']
+SECTIONS=['Respondents','Trust in AI','AI Adoption and Usage','Technology Landscape','Data Maintenance']
 BLUE='#1768F4'; NAVY='#143783'; CYAN='#0C9CE5'; PALE='#DBEAFE'; PURPLE='#6366F1'
 CHART_SCALE=alt.Scale(range=[BLUE,CYAN,PURPLE,'#64B5F6','#1D4ED8','#99C5F8'])
 
@@ -157,11 +157,17 @@ def heading(n):
     st.subheader(f'Q{n}. {QUESTIONS[n]}')
     st.markdown(f"<div class='query-author'>{AUTHORS[n]}</div>", unsafe_allow_html=True)
 
-def source_below_chart(name):
-    """The SQL must appear AFTER the visualization, never above it."""
+def source_below_chart(name, respondent_id=None):
+    """Display the SQL query after the visualization, with Respondent ID option for Q15."""
     st.markdown('**SQL query**')
     try:
-        st.code((QUERIES/name).read_text(encoding='utf-8-sig'),language='sql')
+        sql = (QUERIES/name).read_text(encoding='utf-8-sig')
+
+        if respondent_id is not None:
+            sql = sql.replace('12345', str(int(respondent_id)))
+
+        st.code(sql, language='sql')
+
     except OSError as ex:
         st.error(f'Cannot display SQL: {ex}')
 
@@ -456,8 +462,8 @@ elif section=='Trust in AI':
                 alt_chart(chart)
         source_below_chart(sqlname);results(rows,name=sqlname)
 
-elif section=='AI adoption and usage':
-    st.header('AI adoption and usage')
+elif section=='AI Adoption and Usage':
+    st.header('AI Adoption and Usage')
     t8,t9,t10,t11=st.tabs(['Q8 · AI & languages','Q9 · Coding agents','Q10 · Delegation','Q11 · Usage & trust'])
     with t8:
         heading(8)
@@ -490,6 +496,11 @@ elif section=='AI adoption and usage':
             bar(hist,'task_kinds','respondents',limit=30)
 
         source_below_chart('10_delegated_above_average.sql')
+        with st.expander('SQL used to calculate the histogram'):
+            st.code(
+                (QUERIES/'10_task_kind_histogram.sql').read_text(encoding='utf-8-sig'),
+                language='sql'
+            )
         results(rows,max_rows=200,name='10_delegated_above_average.sql')
     with t11:
         heading(11)
@@ -499,8 +510,8 @@ elif section=='AI adoption and usage':
 
         source_below_chart('11_usage_vs_trust.sql');results(rows,name='11_usage_vs_trust.sql')
 
-elif section=='Technology landscape':
-    st.header('Technology landscape')
+elif section=='Technology Landscape':
+    st.header('Technology Landscape')
     t12,t13,t14=st.tabs(['Q12 · Databases','Q13 · Languages','Q14 · Country rankings'])
     with t12:
         heading(12)
@@ -512,7 +523,7 @@ elif section=='Technology landscape':
     with t13:
         heading(13)
         histogram_rows=fetch('13_language_count_histogram.sql')
-        st.markdown('**Histogram · number of languages per respondent**')
+        st.markdown('**Histogram · number of languages among above-average respondents**')
         if histogram_rows:
             chart=(alt.Chart(alt.Data(values=histogram_rows)).mark_bar(color=BLUE).encode(
                 x=alt.X('languages:O',title='Number of programming languages',
@@ -534,16 +545,16 @@ elif section=='Technology landscape':
             selected=st.selectbox('Map a language (countries where it is in the top N)',languages)
             # The geographical subset is selected inside PostgreSQL, not in Python.
             # Ranking is computed across all languages before filtering the map language.
-            selected_rows=fetch('map_14_language.sql',top_n=top_n,language=selected)
+            selected_rows=fetch('14_map_languages.sql',top_n=top_n,language=selected)
             map_countries(selected_rows,'country','users',f'Reported users of {selected} by country')
 
         source_below_chart('14_language_ranks.sql')
         with st.expander('SQL used to prepare the country map'):
-            st.code((QUERIES/'map_14_language.sql').read_text(encoding='utf-8-sig'),language='sql')
+            st.code((QUERIES/'14_map_languages.sql').read_text(encoding='utf-8-sig'),language='sql')
         results(rows,max_rows=750,name='14_language_ranks.sql')
 
 else:
-    st.header('Data maintenance')
+    st.header('Data Maintenance')
     heading(15)
     st.warning('Demonstration only: SQL deletions are always rolled back, never committed.')
     rid=st.number_input('Respondent ID',min_value=1,value=int(options['example_respondent']),step=1,key='delete_id')
@@ -552,11 +563,11 @@ else:
         try:
             result=rollback_delete_demo(int(rid))
             st.json(result)
-            if result.get('exists_after_rollback'):st.success('Rollback confirmed: the respondent still exists.')
+            if result.get('all_records_restored'):st.success('Rollback confirmed: all original records have been restored.')
         except Exception as ex:st.error(f'Demo failed; transaction rolled back: {ex}')
 
     # Show the actual student-written SQL; never execute it directly from the UI.
     if (QUERIES/'15_data_maintenance.sql').exists():
-        source_below_chart('15_data_maintenance.sql')
+        source_below_chart('15_data_maintenance.sql',respondent_id=rid)
 
 st.markdown("<div class='page-footer'>PROJECT B &nbsp;·&nbsp; STACK OVERFLOW 2026 &nbsp;/&nbsp; POSTGRESQL + SQL + STREAMLIT</div>",unsafe_allow_html=True)

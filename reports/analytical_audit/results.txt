@@ -1,5 +1,5 @@
-SQL source: C:\Users\ainho\Downloads\projectB\sql\analytical_correctness_audit.sql
-Started: 2026-11-25T11:25:58
+SQL source: C:\Users\User\Documents\GitHub\Trust_In_AI\sql\analytical_correctness_audit.sql
+Started: 2026-11-25T18:37:31
 
 [01/12] WITH baseline AS ( SELECT COUNT(DISTINCT a.respondent_id) AS source_on_scale FROM survey.answers a JOIN raw.answer_codes c ON c.code_column='ai_trust_code' AND c.label=a.text_value
 test | source_on_scale | view_rows | unique_respondents | invalid_scores | status

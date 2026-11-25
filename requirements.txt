@@ -2,5 +2,5 @@ streamlit>=1.32,<2
 psycopg2-binary>=2.9,<3
 altair>=5,<7
 plotly>=5.18,<7
-kagglehub
-sqlparse
+kagglehub>=1.0,<2
+sqlparse==0.6.1

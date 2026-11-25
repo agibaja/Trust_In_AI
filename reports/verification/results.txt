@@ -1,5 +1,5 @@
-SQL source: C:\Users\ainho\Downloads\projectB\sql\verify.sql
-Started: 2026-11-25T11:16:09
+SQL source: C:\Users\User\Documents\GitHub\Trust_In_AI\sql\verify.sql
+Started: 2026-11-25T18:36:43
 
 [01/04] SELECT 'respondents' AS table_name,COUNT(*) FROM survey.respondents UNION ALL SELECT 'work_info',COUNT(*) FROM survey.work_info UNION ALL SELECT 'questions',COUNT(*) FROM survey.qu
 table_name | count

@@ -63,28 +63,106 @@ def fetch_filters():
     return result
 
 def rollback_delete_demo(respondent_id):
-    """Execute Q15 deletes temporarily, then always roll back."""
-    conn=connect()
+    """Execute Q15 deletes temporarily, verify them, then always roll back."""
+    conn = connect()
+
     try:
         with conn.cursor() as cur:
-            cur.execute('SELECT COUNT(*) FROM survey.respondents WHERE respondent_id=%s',(respondent_id,))
-            if not cur.fetchone()[0]:
-                return {'found':False}
-            cur.execute('DELETE FROM survey.answers WHERE respondent_id=%s',(respondent_id,))
-            answers=cur.rowcount
-            cur.execute('DELETE FROM survey.work_info WHERE respondent_id=%s',(respondent_id,))
-            work=cur.rowcount
-            cur.execute('DELETE FROM survey.respondents WHERE respondent_id=%s',(respondent_id,))
-            respondent=cur.rowcount
-            cur.execute('SELECT COUNT(*) FROM survey.respondents WHERE respondent_id=%s',(respondent_id,))
-            after_delete=cur.fetchone()[0]
+
+            # 1. Check records before deletion (equivalent to Q15's before SELECT)
+            cur.execute("""
+                SELECT
+                    (SELECT COUNT(*) FROM survey.answers
+                     WHERE respondent_id = %s) AS answers,
+                    (SELECT COUNT(*) FROM survey.work_info
+                     WHERE respondent_id = %s) AS work_info,
+                    (SELECT COUNT(*) FROM survey.respondents
+                     WHERE respondent_id = %s) AS respondents
+            """, (respondent_id,) * 3)
+
+            counts_before = cur.fetchone()
+
+            if counts_before[2] == 0:
+                return {'found': False}
+
+            # 2. Delete children first, then the parent (same order as Q15)
+            cur.execute(
+                'DELETE FROM survey.answers WHERE respondent_id = %s',
+                (respondent_id,)
+            )
+            deleted_answers = cur.rowcount
+
+            cur.execute(
+                'DELETE FROM survey.work_info WHERE respondent_id = %s',
+                (respondent_id,)
+            )
+            deleted_work_info = cur.rowcount
+
+            cur.execute(
+                'DELETE FROM survey.respondents WHERE respondent_id = %s',
+                (respondent_id,)
+            )
+            deleted_respondents = cur.rowcount
+
+            # 3. Check all three tables after deletion, before rollback
+            cur.execute("""
+                SELECT
+                    (SELECT COUNT(*) FROM survey.answers
+                     WHERE respondent_id = %s),
+                    (SELECT COUNT(*) FROM survey.work_info
+                     WHERE respondent_id = %s),
+                    (SELECT COUNT(*) FROM survey.respondents
+                     WHERE respondent_id = %s)
+            """, (respondent_id,) * 3)
+
+            counts_after = cur.fetchone()
+
+        # 4. Roll back all three DELETE operations
         conn.rollback()
+
+        # 5. Verify that all original records have been restored
         with conn.cursor() as cur:
-            cur.execute('SELECT COUNT(*) FROM survey.respondents WHERE respondent_id=%s',(respondent_id,))
-            restored=cur.fetchone()[0]
-        return {'found':True,'deleted_answers_temporarily':answers,'deleted_work_rows_temporarily':work,
-                'deleted_respondents_temporarily':respondent,'exists_inside_transaction':bool(after_delete),
-                'exists_after_rollback':bool(restored)}
+            cur.execute("""
+                SELECT
+                    (SELECT COUNT(*) FROM survey.answers
+                     WHERE respondent_id = %s),
+                    (SELECT COUNT(*) FROM survey.work_info
+                     WHERE respondent_id = %s),
+                    (SELECT COUNT(*) FROM survey.respondents
+                     WHERE respondent_id = %s)
+            """, (respondent_id,) * 3)
+
+            counts_after_rollback = cur.fetchone()
+
+        return {
+            'found': True,
+            'counts_before': {
+                'answers': counts_before[0],
+                'work_info': counts_before[1],
+                'respondents': counts_before[2]
+            },
+            'deleted_temporarily': {
+                'answers': deleted_answers,
+                'work_info': deleted_work_info,
+                'respondents': deleted_respondents
+            },
+            'counts_after_deletion': {
+                'answers': counts_after[0],
+                'work_info': counts_after[1],
+                'respondents': counts_after[2]
+            },
+            'all_tables_empty_inside_transaction': all(
+                count == 0 for count in counts_after
+            ),
+            'counts_after_rollback': {
+                'answers': counts_after_rollback[0],
+                'work_info': counts_after_rollback[1],
+                'respondents': counts_after_rollback[2]
+            },
+            'all_records_restored': counts_before == counts_after_rollback
+        }
+
     finally:
+        # Safety net: rollback if an error occurs before the explicit rollback
         conn.rollback()
         conn.close()

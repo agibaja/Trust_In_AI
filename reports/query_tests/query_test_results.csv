@@ -1,5 +1,6 @@
 ﻿sql_file,status,sample_rows,returned_column_types,notes
 01_demographic.sql,PASS,4,"category: text, respondents: bigint",
+02_respondent_answers_readable.sql,PASS,4,"topic: text, question: text, answers: text",
 02_respondent_profile.sql,PASS,4,"respondent_id: integer, age_group: text, gender: text, country: text, education: text, coder_type: text, role: text, industry: text, org_size: text, topic: text, question_code: text, question_text: text, item_code: text, option_text: text, technology_name: text, numeric_value: numeric, text_value: text",
 03_trust_distribution.sql,PASS,4,"trust_score: integer, trust_label: text, respondents: bigint",
 04_role_trust.sql,PASS,4,"role: text, respondents: bigint, avg_trust: numeric",

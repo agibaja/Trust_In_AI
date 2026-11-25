@@ -1,5 +1,5 @@
-SQL source: C:\Users\ainho\Downloads\projectB\sql\data_profiling.sql
-Started: 2026-11-25T11:16:16
+SQL source: C:\Users\User\Documents\GitHub\Trust_In_AI\sql\data_profiling.sql
+Started: 2026-11-25T18:36:51
 
 [01/17] SELECT 'raw' AS schema_name, 'respondents' AS table_name, COUNT(*) AS row_count FROM raw.respondents UNION ALL SELECT 'raw','ai_trust_ml', COUNT(*) FROM raw.ai_trust_ml UNION ALL S
 schema_name | table_name | row_count
@@ -468,9 +468,9 @@ Result: 316 rows -> reports\profiling\result_06.csv
 test | violations
 raw ML respondent_id not in raw respondents | 0
 final answers with missing question | 0
-raw multi-select question not in raw questions | 0
-raw multi-select respondent_id not in raw respondents | 0
 final answers with missing respondent | 0
+raw multi-select respondent_id not in raw respondents | 0
+raw multi-select question not in raw questions | 0
 Result: 5 rows -> reports\profiling\result_07.csv
 
 [17/17] SELECT 'original respondents' AS metric, COUNT(*) AS value FROM raw.respondents UNION ALL SELECT 'final respondents',COUNT(*) FROM survey.respondents UNION ALL SELECT 'raw multi-se
