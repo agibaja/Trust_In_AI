@@ -545,12 +545,12 @@ elif section=='Technology Landscape':
             selected=st.selectbox('Map a language (countries where it is in the top N)',languages)
             # The geographical subset is selected inside PostgreSQL, not in Python.
             # Ranking is computed across all languages before filtering the map language.
-            selected_rows=fetch('map_14_language.sql',top_n=top_n,language=selected)
+            selected_rows=fetch('14_map_languages.sql',top_n=top_n,language=selected)
             map_countries(selected_rows,'country','users',f'Reported users of {selected} by country')
 
         source_below_chart('14_language_ranks.sql')
         with st.expander('SQL used to prepare the country map'):
-            st.code((QUERIES/'map_14_language.sql').read_text(encoding='utf-8-sig'),language='sql')
+            st.code((QUERIES/'14_map_languages.sql').read_text(encoding='utf-8-sig'),language='sql')
         results(rows,max_rows=750,name='14_language_ranks.sql')
 
 else:
