@@ -57,6 +57,7 @@ projectB/
 │   ├── analytical_correctness_audit.sql
 │   ├── check_outliers.sql
 │   ├── diagnostic_08.sql
+|   ├── performance_q14.sql
 │   ├── row_missingness.sql
 │   └── verify.sql
 |
@@ -68,6 +69,7 @@ projectB/
     ├── language_mismatches/
     ├── outliers/
     ├── profiling/
+    ├── q14_performance/
     ├── query_tests/
     └── verification/                     
 ```
