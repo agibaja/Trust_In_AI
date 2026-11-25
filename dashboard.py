@@ -496,6 +496,11 @@ elif section=='AI Adoption and Usage':
             bar(hist,'task_kinds','respondents',limit=30)
 
         source_below_chart('10_delegated_above_average.sql')
+        with st.expander('SQL used to calculate the histogram'):
+            st.code(
+                (QUERIES/'10_task_kind_histogram.sql').read_text(encoding='utf-8-sig'),
+                language='sql'
+            )
         results(rows,max_rows=200,name='10_delegated_above_average.sql')
     with t11:
         heading(11)
@@ -518,7 +523,7 @@ elif section=='Technology Landscape':
     with t13:
         heading(13)
         histogram_rows=fetch('13_language_count_histogram.sql')
-        st.markdown('**Histogram · number of languages per respondent**')
+        st.markdown('**Histogram · number of languages among above-average respondents**')
         if histogram_rows:
             chart=(alt.Chart(alt.Data(values=histogram_rows)).mark_bar(color=BLUE).encode(
                 x=alt.X('languages:O',title='Number of programming languages',
