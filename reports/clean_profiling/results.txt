@@ -1,5 +1,5 @@
-SQL source: C:\Users\ainho\Downloads\projectB\sql\clean_data_profiling.sql
-Started: 2026-11-25T11:17:15
+SQL source: C:\Users\User\Documents\GitHub\Trust_In_AI\sql\clean_data_profiling.sql
+Started: 2026-11-25T18:37:19
 
 [01/10] WITH missing AS ( SELECT r.respondent_id::INTEGER AS respondent_id, count(*) AS fields_checked, count(*) FILTER (WHERE v.value IS NULL OR btrim(v.value)='') AS missing_fields FROM 
 raw_respondents | should_keep | should_remove | incorrectly_removed | incorrectly_retained | actually_retained
